@@ -1,0 +1,6 @@
+[submodule "in-memory-of/LockLogin2"]
+	path = in-memory-of/LockLogin2
+	url = https://github.com/KarmaDeb/LockLogin2.git
+[submodule "in-memory-of/LockLoginReborn"]
+	path = in-memory-of/LockLoginReborn
+	url = https://github.com/KarmaDeb/LockLoginReborn.git
