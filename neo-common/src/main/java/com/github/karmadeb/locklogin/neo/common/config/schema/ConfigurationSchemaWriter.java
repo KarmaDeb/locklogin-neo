@@ -10,12 +10,16 @@ import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.ScalarNode;
+import org.yaml.snakeyaml.nodes.SequenceNode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ConfigurationSchemaWriter implements SchemaWriter {
@@ -61,19 +65,133 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 
 			Node node = mapped.get(key);
 			if (node == null) {
-
+				writeValue(value, false);
+			} else {
+				eval(value, root, node);
 			}
 		}
 	}
 
-	private static void eval(final ScalarNode key,
-							 final ConfigurationValueWriter<?> value,
-							 final MappingNode root,
-							 final Node node) {
-		Optional<?> constant = value.constant();
-		if (node == null && constant.isPresent()) {
-			Object obj = constant.get();
+	private void writeValue(final ConfigurationValueWriter<?> value, final boolean required) {
+		String key = value.key();
+		Object def = value.constant().orElse(null);
 
+		if (def == null) {
+			def = (required ? value.required() : value.with()).map(Supplier::get).orElse(null);
+		}
+
+		if (def == null) {
+			return;
+		}
+
+		if (def instanceof String s) {
+			this.writer.writeString(key, s);
+		} else if (def instanceof Byte b) {
+			this.writer.writeByte(key, b);
+		} else if (def instanceof Short s) {
+			this.writer.writeShort(key, s);
+		} else if (def instanceof Integer i) {
+			this.writer.writeInt(key, i);
+		} else if (def instanceof Long l) {
+			this.writer.writeLong(key, l);
+		} else if (def instanceof Float f) {
+			this.writer.writeFloat(key, f);
+		} else if (def instanceof Double d) {
+			this.writer.writeDouble(key, d);
+		} else if (def instanceof Boolean b) {
+			this.writer.writeBool(key, b);
+		} else if (def instanceof List<?> list) {
+			writeListDefault(key, list);
+		} else if (def instanceof SchemaWriter schema) {
+			writeSectionDefault(key, (ConfigurationSchemaWriter) schema);
+		}
+
+		String[] comments = value.comment();
+		if (comments != null && comments.length > 0) {
+			this.writer.comment(key, comments);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void writeListDefault(final String key, final List<?> list) {
+		if (list.isEmpty()) {
+			this.writer.writeStringList(key, new ArrayList<>());
+			return;
+		}
+
+		Object first = list.getFirst();
+		if (first instanceof String) {
+			this.writer.writeStringList(key, (List<String>) list);
+		} else if (first instanceof SchemaWriter) {
+			List<SchemaWriter> schemas = (List<SchemaWriter>) list;
+			this.writer.writeSections(key, _ -> {
+				List<ConfigWriter> writers = new ArrayList<>();
+				for (SchemaWriter sw : schemas) {
+					if (sw instanceof ConfigurationSchemaWriter cs) {
+						writers.add(cs.writer);
+					}
+				}
+
+				return writers;
+			});
+		}
+	}
+
+	private void writeSectionDefault(final String key, final ConfigurationSchemaWriter schema) {
+		this.writer.writeSection(key, childWriter -> {
+			if (childWriter instanceof ConfigurationWriter cw) {
+				schema.apply(cw.yaml());
+			}
+		});
+	}
+
+	private void eval(final ConfigurationValueWriter<?> value,
+					  final MappingNode root,
+					  final Node node) {
+		value.validator().ifPresent(validator -> {
+			Predicate<Object> isInvalid = validator.negate();
+
+			if (node instanceof ScalarNode scalar) {
+				Object resolved = value.resolve(scalar);
+				if (isInvalid.test(resolved)) {
+					removeNode(root, value.key());
+					writeValue(value, true);
+				}
+			} else if (node instanceof MappingNode mapping) {
+				ConfigurationWriter writer = new ConfigurationWriter(mapping);
+				if (isInvalid.test(writer)) {
+					removeNode(root, value.key());
+					writeValue(value, true);
+				}
+			} else if (node instanceof SequenceNode sequence) {
+				List<Node> nodes = sequence.getValue();
+				List<Object> transposed = new ArrayList<>();
+				for (Node obj : nodes) {
+					if (obj instanceof ScalarNode sc) {
+						transposed.add(sc.getValue());
+					} else if (obj instanceof MappingNode map) {
+						ConfigurationWriter writer = new ConfigurationWriter(map);
+						transposed.add(writer);
+					}
+				}
+
+				if (isInvalid.test(transposed)) {
+					removeNode(root, value.key());
+					writeValue(value, true);
+				}
+			}
+		});
+	}
+
+	private static void removeNode(final MappingNode root, final String key) {
+		List<NodeTuple> tuples = root.getValue();
+		for (int i = 0; i < tuples.size(); i++) {
+			NodeTuple tuple = tuples.get(i);
+			Node keyNode = tuple.getKeyNode();
+			if (keyNode instanceof ScalarNode scalar && scalar.getValue().equals(key)) {
+				tuples.remove(i);
+				return;
+			}
 		}
 	}
 

@@ -1,25 +1,76 @@
 package com.github.karmadeb.locklogin.neo.common.config.schema;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.ValueWriter;
+import com.github.karmadeb.locklogin.neo.common.SneakyFunction;
 import org.jetbrains.annotations.NotNull;
+import org.yaml.snakeyaml.nodes.ScalarNode;
 
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 
+	public enum Type implements Function<String, Object> {
+		STRING(s -> s),
+		BYTE(Byte::parseByte),
+		SHORT(Short::parseShort),
+		INT(Integer::parseInt),
+		LONG(Long::parseLong),
+		FLOAT(Float::parseFloat),
+		DOUBLE(Double::parseDouble),
+		BOOLEAN(Boolean::parseBoolean),
+		MAPPING,
+		STRING_LIST,
+		MAPPING_LIST;
+
+		private final SneakyFunction<String, Object> transposer;
+
+		Type() {
+			this(_ -> { throw new UnsupportedOperationException(); });
+		}
+
+		Type(final SneakyFunction<String, Object> transposer) {
+			this.transposer = transposer;
+		}
+
+		/**
+		 * Applies this function to the given argument.
+		 *
+		 * @param s the function argument
+		 * @return the function result
+		 */
+		@Override
+		public Object apply(final String s) {
+			try {
+				this.transposer.apply(s);
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+
+			return null;
+		}
+	}
+
 	private final String key;
 	private final String[] comment;
+
+	private final Type type;
 
 	private T constant;
 	private Supplier<T> requiredValue;
 	private Supplier<T> defaultValue;
 	private Predicate<Object> validator;
 
-	public ConfigurationValueWriter(final String key, final String[] comment) {
+	public ConfigurationValueWriter(final String key, final String[] comment, final Type type) {
 		this.key = key;
 		this.comment = comment;
+		this.type = type;
+	}
+
+	public Type type() {
+		return this.type;
 	}
 
 	public String key() {
@@ -114,5 +165,10 @@ public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 	public ConfigurationValueWriter<T> validator(final @NotNull Predicate<Object> value) {
 		this.validator = value;
 		return this;
+	}
+
+	public Object resolve(final ScalarNode scalar) {
+		String raw = scalar.getValue();
+		return this.type.apply(raw);
 	}
 }

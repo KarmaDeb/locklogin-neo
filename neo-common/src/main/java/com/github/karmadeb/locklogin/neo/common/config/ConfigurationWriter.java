@@ -1,7 +1,6 @@
 package com.github.karmadeb.locklogin.neo.common.config;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigWriter;
-import com.github.karmadeb.locklogin.neo.api.configuration.schema.SchemaWriter;
 import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationSchemaWriter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -31,9 +30,7 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 	 * Set the comments for the specified
 	 * key in the configuration. If the key does
 	 * not exist when the configuration is generated,
-	 * the comment is not added. In other case (even if
-	 * this method was called before setting the value with
-	 * writeX), the comment is appended always on top of the key
+	 * the comment is not added.
 	 *
 	 * @param key      the key
 	 * @param comments the key comments

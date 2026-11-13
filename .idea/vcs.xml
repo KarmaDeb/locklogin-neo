@@ -2,5 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/in-memory-of/LockLogin2" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/in-memory-of/LockLoginReborn" vcs="Git" />
   </component>
 </project>

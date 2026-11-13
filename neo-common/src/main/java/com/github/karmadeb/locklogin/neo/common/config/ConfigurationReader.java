@@ -1,6 +1,7 @@
 package com.github.karmadeb.locklogin.neo.common.config;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigReader;
+import org.jetbrains.annotations.ApiStatus.Internal;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
@@ -27,6 +28,11 @@ public class ConfigurationReader implements ConfigReader {
 	@Contract("null -> fail")
 	public ConfigurationReader(final MappingNode yamlDocument) {
 		this.yaml = Objects.requireNonNull(yamlDocument);
+	}
+
+	@Internal
+	public MappingNode yaml() {
+		return this.yaml;
 	}
 
 	/**

@@ -4,6 +4,7 @@ import com.github.karmadeb.locklogin.neo.api.configuration.schema.PropertyWriter
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.SchemaWriter;
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.ValueWriter;
 import com.github.karmadeb.locklogin.neo.common.config.ConfigurationWriter;
+import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationValueWriter.Type;
 import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
 import org.yaml.snakeyaml.nodes.MappingNode;
@@ -37,7 +38,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter string(final @NotNull Consumer<ValueWriter<String>> configuration) {
-		ConfigurationValueWriter<String> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<String> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.STRING);
 		configuration.accept(value);
 
 		this.schema.values.put(this.key, value);
@@ -52,7 +54,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter byteNumber(final @NotNull Consumer<ValueWriter<Byte>> configuration) {
-		ConfigurationValueWriter<Byte> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<Byte> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.BYTE);
 		configuration.accept(value);
 
 		this.schema.values.put(this.key, value);
@@ -67,7 +70,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter shortNumber(final @NotNull Consumer<ValueWriter<Short>> configuration) {
-		ConfigurationValueWriter<Short> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<Short> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.SHORT);
 		configuration.accept(value);
 
 		this.schema.values.put(this.key, value);
@@ -82,7 +86,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter intNumber(final @NotNull Consumer<ValueWriter<Integer>> configuration) {
-		ConfigurationValueWriter<Integer> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<Integer> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.INT);
 		configuration.accept(value);
 
 		this.schema.values.put(this.key, value);
@@ -97,7 +102,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter longNumber(final @NotNull Consumer<ValueWriter<Long>> configuration) {
-		ConfigurationValueWriter<Long> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<Long> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.LONG);
 		configuration.accept(value);
 
 		this.schema.values.put(this.key, value);
@@ -112,7 +118,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter floatNumber(final @NotNull Consumer<ValueWriter<Float>> configuration) {
-		ConfigurationValueWriter<Float> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<Float> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.FLOAT);
 		configuration.accept(value);
 
 		this.schema.values.put(this.key, value);
@@ -127,7 +134,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter doubleNumber(final @NotNull Consumer<ValueWriter<Double>> configuration) {
-		ConfigurationValueWriter<Double> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<Double> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.DOUBLE);
 		configuration.accept(value);
 
 		this.schema.values.put(this.key, value);
@@ -142,7 +150,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter bool(final @NotNull Consumer<ValueWriter<Boolean>> configuration) {
-		ConfigurationValueWriter<Boolean> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<Boolean> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.BOOLEAN);
 		configuration.accept(value);
 
 		this.schema.values.put(this.key, value);
@@ -157,7 +166,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter section(final @NotNull BiConsumer<Supplier<SchemaWriter>, ValueWriter<SchemaWriter>> configuration) {
-		ConfigurationValueWriter<SchemaWriter> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<SchemaWriter> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.MAPPING);
 		configuration.accept(ConfigurationPropertyWriter::makeSchema, value);
 
 		this.schema.values.put(this.key, value);
@@ -172,7 +182,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter sections(final @NotNull BiConsumer<Supplier<SchemaWriter>, ValueWriter<List<SchemaWriter>>> configuration) {
-		ConfigurationValueWriter<List<SchemaWriter>> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<List<SchemaWriter>> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.MAPPING_LIST);
 		configuration.accept(ConfigurationPropertyWriter::makeSchema, value);
 
 		this.schema.values.put(this.key, value);
@@ -187,7 +198,8 @@ public class ConfigurationPropertyWriter implements PropertyWriter {
 	 */
 	@Override
 	public SchemaWriter list(final @NotNull Consumer<ValueWriter<List<String>>> configuration) {
-		ConfigurationValueWriter<List<String>> value = new ConfigurationValueWriter<>(this.key, this.comment);
+		ConfigurationValueWriter<List<String>> value = new ConfigurationValueWriter<>(this.key, this.comment,
+				Type.STRING_LIST);
 		configuration.accept(value);
 
 		this.schema.values.put(this.key, value);
