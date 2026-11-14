@@ -37,10 +37,10 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 	 */
 	@Override
 	public void comment(final @NotNull String key, final @NotNull String... comments) {
-		this.resolve(key).ifPresent(node -> node.setBlockComments(
+		this.resolveKey(key).ifPresent(node -> node.setBlockComments(
 				Arrays.stream(comments)
-						.map(comment -> comment.startsWith("#") ? comment :
-								String.format("# %s", comment))
+						.map(comment -> comment.startsWith(" ") ? comment :
+								String.format(" %s", comment))
 						.map(comment -> new CommentLine(null, null, comment, CommentType.BLOCK))
 						.collect(Collectors.toList())
 		));
@@ -142,14 +142,14 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 	 */
 	@Override
 	public void writeSection(final @NotNull String key, final @NotNull Consumer<ConfigWriter> writer) {
-		MappingNode newValue = new MappingNode(Tag.MAP, new ArrayList<>(), FlowStyle.AUTO);
+		MappingNode newValue = new MappingNode(Tag.MAP, new ArrayList<>(), FlowStyle.BLOCK);
 		ConfigWriter child = new ConfigurationWriter(newValue);
 
 		this.resolve(key, -1, true).ifPresent(node -> {
 			writer.accept(child);
 
 			if (node instanceof MappingNode mapping) {
-				ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.DOUBLE_QUOTED);
+				ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.PLAIN);
 				mapping.getValue().add(new NodeTuple(keyNode, newValue));
 			} else if (node instanceof SequenceNode sequence) {
 				sequence.getValue().add(newValue);
@@ -168,7 +168,7 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 							  final @NotNull Function<Supplier<ConfigWriter>, List<ConfigWriter>> writer) {
 		this.resolve(key, -1, true).ifPresent(node -> {
 			List<ConfigWriter> configs = writer.apply(() -> {
-				MappingNode newValue = new MappingNode(Tag.MAP, new ArrayList<>(), FlowStyle.AUTO);
+				MappingNode newValue = new MappingNode(Tag.MAP, new ArrayList<>(), FlowStyle.BLOCK);
 				return new ConfigurationWriter(newValue);
 			});
 
@@ -176,10 +176,11 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 					.map(c -> c.yaml)
 					.collect(Collectors.toList());
 
-			SequenceNode seq = new SequenceNode(Tag.SEQ, nodes, FlowStyle.AUTO);
+			SequenceNode seq = new SequenceNode(Tag.SEQ, nodes, FlowStyle.BLOCK);
 
 			if (node instanceof MappingNode mapping) {
-				ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.DOUBLE_QUOTED);
+				ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.PLAIN);
+
 				mapping.getValue().add(new NodeTuple(keyNode, seq));
 			} else if (node instanceof SequenceNode sequence) {
 				sequence.getValue().add(seq);
@@ -199,10 +200,10 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 			List<Node> transformed = value.stream()
 					.map(s -> new ScalarNode(Tag.STR, s, null, null, ScalarStyle.SINGLE_QUOTED))
 					.collect(Collectors.toList());
-			SequenceNode seq = new SequenceNode(Tag.SEQ, transformed, FlowStyle.AUTO);
+			SequenceNode seq = new SequenceNode(Tag.SEQ, transformed, FlowStyle.BLOCK);
 
 			if (node instanceof MappingNode mapping) {
-				ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.DOUBLE_QUOTED);
+				ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.PLAIN);
 				mapping.getValue().add(new NodeTuple(keyNode, seq));
 			} else if (node instanceof SequenceNode sequence) {
 				sequence.getValue().add(seq);
@@ -225,7 +226,7 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 
 		this.resolve(key, -1, true).ifPresent(node -> {
 			if (node instanceof MappingNode mapping) {
-				ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.DOUBLE_QUOTED);
+				ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.PLAIN);
 				mapping.getValue().add(new NodeTuple(keyNode, valueNode));
 			} else if (node instanceof SequenceNode sequence) {
 				if (sequence.getTag().equals(Tag.SET) && sequence.getValue()
@@ -233,6 +234,7 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 						.filter(n -> n instanceof ScalarNode)
 						.map(n -> (ScalarNode) n)
 						.anyMatch(s -> s.getValue().equals(value))) {
+
 					return;
 				}
 

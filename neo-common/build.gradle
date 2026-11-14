@@ -16,6 +16,7 @@ dependencies {
 
     compileOnly("org.bouncycastle:bcprov-jdk18on:1.86")
     compileOnly("org.yaml:snakeyaml:2.7")
+    testImplementation("org.yaml:snakeyaml:2.7")
 }
 
 test {

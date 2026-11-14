@@ -2,9 +2,11 @@ package com.github.karmadeb.locklogin.neo.common.config.schema;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.ValueWriter;
 import com.github.karmadeb.locklogin.neo.common.SneakyFunction;
+import com.github.karmadeb.locklogin.neo.common.config.ConfigurationWriter;
 import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -12,27 +14,29 @@ import java.util.function.Supplier;
 
 public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 
-	public enum Type implements Function<String, Object> {
-		STRING(s -> s),
-		BYTE(Byte::parseByte),
-		SHORT(Short::parseShort),
-		INT(Integer::parseInt),
-		LONG(Long::parseLong),
-		FLOAT(Float::parseFloat),
-		DOUBLE(Double::parseDouble),
-		BOOLEAN(Boolean::parseBoolean),
-		MAPPING,
-		STRING_LIST,
-		MAPPING_LIST;
+	public enum Type implements Function<String, Object>, Predicate<Object> {
+		STRING(s -> s, obj -> obj instanceof String),
+		BYTE(Byte::parseByte, obj -> obj instanceof Byte),
+		SHORT(Short::parseShort, obj -> obj instanceof Short),
+		INT(Integer::parseInt, obj -> obj instanceof Integer),
+		LONG(Long::parseLong, obj -> obj instanceof Long),
+		FLOAT(Float::parseFloat, obj -> obj instanceof Float),
+		DOUBLE(Double::parseDouble, obj -> obj instanceof Double),
+		BOOLEAN(Boolean::parseBoolean, obj -> obj instanceof Boolean),
+		MAPPING(obj -> obj instanceof ConfigurationWriter),
+		STRING_LIST(obj -> obj instanceof List<?> l && (l.isEmpty() || l.getFirst() instanceof String)),
+		MAPPING_LIST(obj -> obj instanceof List<?> l && (l.isEmpty() || l.getFirst() instanceof ConfigurationWriter));
 
 		private final SneakyFunction<String, Object> transposer;
+		private final Predicate<Object> typeCheck;
 
-		Type() {
-			this(_ -> { throw new UnsupportedOperationException(); });
+		Type(final Predicate<Object> typeCheck) {
+			this(_ -> { throw new UnsupportedOperationException(); }, typeCheck);
 		}
 
-		Type(final SneakyFunction<String, Object> transposer) {
+		Type(final SneakyFunction<String, Object> transposer, final Predicate<Object> typeCheck) {
 			this.transposer = transposer;
+			this.typeCheck = typeCheck;
 		}
 
 		/**
@@ -44,12 +48,22 @@ public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 		@Override
 		public Object apply(final String s) {
 			try {
-				this.transposer.apply(s);
+				return this.transposer.apply(s);
 			} catch (Exception ex) {
 				throw new RuntimeException(ex);
 			}
+		}
 
-			return null;
+		/**
+		 * Evaluates this predicate on the given argument.
+		 *
+		 * @param o the input argument
+		 * @return {@code true} if the input argument matches the predicate,
+		 * otherwise {@code false}
+		 */
+		@Override
+		public boolean test(final Object o) {
+			return this.typeCheck.test(o);
 		}
 	}
 
@@ -128,8 +142,9 @@ public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 		this.constant = null;
 
 		this.requiredValue = defaultValue;
-		if (this.defaultValue != null) {
-			this.defaultValue = defaultValue;
+		this.defaultValue = defaultValue;
+		if (this.validator == null) {
+			this.validator = this.type;
 		}
 
 		return this;

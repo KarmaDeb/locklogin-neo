@@ -19,6 +19,7 @@ import java.util.Objects;
  */
 public final class ConfigFile {
 
+	@SuppressWarnings("unused")
 	public static final ConfigFile PLUGIN_CONFIG = new ConfigFile("config");
 
 	private final Path path;
@@ -31,6 +32,15 @@ public final class ConfigFile {
 	@Contract("null, _ -> fail")
 	public ConfigFile(final String filename, final String... route) {
 		this.path = ConfigFile.resolvePath(filename, route);
+	}
+
+	/**
+	 * Create a new config file
+	 * @param path the file path
+	 */
+	@Contract("null -> fail")
+	private ConfigFile(final Path path) {
+		this.path = Objects.requireNonNull(path);
 	}
 
 	/**
@@ -52,6 +62,10 @@ public final class ConfigFile {
 		Path parent = this.path.getParent();
 		if (!Files.exists(parent)) {
 			Files.createDirectories(parent);
+		}
+
+		if (!Files.exists(this.path)) {
+			Files.createFile(this.path);
 		}
 
 		return Files.newInputStream(this.path, StandardOpenOption.CREATE);
@@ -224,5 +238,20 @@ public final class ConfigFile {
 		}
 
 		return Path.of("LockLogin", String.format("%s.yaml", filename));
+	}
+
+	/**
+	 * Create an absolute config file
+	 * @param path the file path
+	 * @return the config file
+	 */
+	@Contract("null -> fail")
+	public static ConfigFile absolute(final Path path) {
+		Path normalized = Objects.requireNonNull(path).normalize();
+		if (!normalized.isAbsolute()) {
+			throw new IllegalArgumentException("ConfigFile#absolute requires an absolute path too");
+		}
+
+		return new ConfigFile(normalized);
 	}
 }

@@ -57,6 +57,7 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 	@Contract("null -> fail")
 	public void apply(final MappingNode root) {
 		Objects.requireNonNull(root);
+		ConfigurationWriter targetWriter = new ConfigurationWriter(root);
 		Map<String, Node> mapped = mapNode(root);
 
 		for (Map.Entry<String, ConfigurationValueWriter<?>> entry : this.values.entrySet()) {
@@ -65,19 +66,23 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 
 			Node node = mapped.get(key);
 			if (node == null) {
-				writeValue(value, false);
+				writeValue(value, targetWriter);
 			} else {
-				eval(value, root, node);
+				eval(value, root, node, targetWriter);
 			}
 		}
 	}
 
-	private void writeValue(final ConfigurationValueWriter<?> value, final boolean required) {
+	private void writeValue(final ConfigurationValueWriter<?> value, final ConfigurationWriter targetWriter) {
 		String key = value.key();
 		Object def = value.constant().orElse(null);
 
 		if (def == null) {
-			def = (required ? value.required() : value.with()).map(Supplier::get).orElse(null);
+			def = value.required().map(Supplier::get).orElse(null);
+		}
+
+		if (def == null) {
+			def = value.with().map(Supplier::get).orElse(null);
 		}
 
 		if (def == null) {
@@ -85,50 +90,54 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 		}
 
 		if (def instanceof String s) {
-			this.writer.writeString(key, s);
+			targetWriter.writeString(key, s);
 		} else if (def instanceof Byte b) {
-			this.writer.writeByte(key, b);
+			targetWriter.writeByte(key, b);
 		} else if (def instanceof Short s) {
-			this.writer.writeShort(key, s);
+			targetWriter.writeShort(key, s);
 		} else if (def instanceof Integer i) {
-			this.writer.writeInt(key, i);
+			targetWriter.writeInt(key, i);
 		} else if (def instanceof Long l) {
-			this.writer.writeLong(key, l);
+			targetWriter.writeLong(key, l);
 		} else if (def instanceof Float f) {
-			this.writer.writeFloat(key, f);
+			targetWriter.writeFloat(key, f);
 		} else if (def instanceof Double d) {
-			this.writer.writeDouble(key, d);
+			targetWriter.writeDouble(key, d);
 		} else if (def instanceof Boolean b) {
-			this.writer.writeBool(key, b);
+			targetWriter.writeBool(key, b);
 		} else if (def instanceof List<?> list) {
-			writeListDefault(key, list);
+			writeListDefault(key, list, targetWriter);
 		} else if (def instanceof SchemaWriter schema) {
-			writeSectionDefault(key, (ConfigurationSchemaWriter) schema);
+			writeSectionDefault(key, (ConfigurationSchemaWriter) schema, targetWriter);
 		}
 
 		String[] comments = value.comment();
 		if (comments != null && comments.length > 0) {
-			this.writer.comment(key, comments);
+			targetWriter.comment(key, comments);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	private void writeListDefault(final String key, final List<?> list) {
+	private void writeListDefault(final String key, final List<?> list, final ConfigurationWriter targetWriter) {
 		if (list.isEmpty()) {
-			this.writer.writeStringList(key, new ArrayList<>());
+			targetWriter.writeStringList(key, new ArrayList<>());
 			return;
 		}
 
 		Object first = list.getFirst();
 		if (first instanceof String) {
-			this.writer.writeStringList(key, (List<String>) list);
+			targetWriter.writeStringList(key, (List<String>) list);
 		} else if (first instanceof SchemaWriter) {
 			List<SchemaWriter> schemas = (List<SchemaWriter>) list;
-			this.writer.writeSections(key, _ -> {
+			targetWriter.writeSections(key, supplier -> {
 				List<ConfigWriter> writers = new ArrayList<>();
 				for (SchemaWriter sw : schemas) {
 					if (sw instanceof ConfigurationSchemaWriter cs) {
-						writers.add(cs.writer);
+						ConfigWriter cw = supplier.get();
+						if (cw instanceof ConfigurationWriter cwr) {
+							cs.apply(cwr.yaml());
+						}
+						writers.add(cw);
 					}
 				}
 
@@ -137,8 +146,8 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 		}
 	}
 
-	private void writeSectionDefault(final String key, final ConfigurationSchemaWriter schema) {
-		this.writer.writeSection(key, childWriter -> {
+	private void writeSectionDefault(final String key, final ConfigurationSchemaWriter schema, final ConfigurationWriter targetWriter) {
+		targetWriter.writeSection(key, childWriter -> {
 			if (childWriter instanceof ConfigurationWriter cw) {
 				schema.apply(cw.yaml());
 			}
@@ -147,7 +156,8 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 
 	private void eval(final ConfigurationValueWriter<?> value,
 					  final MappingNode root,
-					  final Node node) {
+					  final Node node,
+					  final ConfigurationWriter targetWriter) {
 		value.validator().ifPresent(validator -> {
 			Predicate<Object> isInvalid = validator.negate();
 
@@ -155,13 +165,13 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 				Object resolved = value.resolve(scalar);
 				if (isInvalid.test(resolved)) {
 					removeNode(root, value.key());
-					writeValue(value, true);
+					writeValue(value, targetWriter);
 				}
 			} else if (node instanceof MappingNode mapping) {
 				ConfigurationWriter writer = new ConfigurationWriter(mapping);
 				if (isInvalid.test(writer)) {
 					removeNode(root, value.key());
-					writeValue(value, true);
+					writeValue(value, targetWriter);
 				}
 			} else if (node instanceof SequenceNode sequence) {
 				List<Node> nodes = sequence.getValue();
@@ -177,7 +187,7 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 
 				if (isInvalid.test(transposed)) {
 					removeNode(root, value.key());
-					writeValue(value, true);
+					writeValue(value, targetWriter);
 				}
 			}
 		});

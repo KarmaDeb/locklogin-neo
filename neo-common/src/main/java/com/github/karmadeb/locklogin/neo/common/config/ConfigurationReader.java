@@ -260,11 +260,52 @@ public class ConfigurationReader implements ConfigReader {
 		return this.resolve(key, 0, false);
 	}
 
+	protected final Optional<ScalarNode> resolveKey(final @NotNull String key) {
+		return this.resolveKey(key, 0, false);
+	}
+
 	protected final Optional<Node> resolve(final @NotNull String key, final int level, final boolean fill) {
+		Result result = this.resolveInternal(key, level, fill);
+		if (result.tuple != null) {
+			return Optional.of(result.tuple.getValueNode());
+		}
+
+		return Optional.ofNullable(result.node);
+	}
+
+	@SuppressWarnings("SameParameterValue")
+	protected final Optional<ScalarNode> resolveKey(final @NotNull String key, final int level, final boolean fill) {
+		Result result = this.resolveInternal(key, level, fill);
+		if (result.tuple != null) {
+			Node keyNode = result.tuple.getKeyNode();
+			if (keyNode instanceof ScalarNode scalar) {
+				return Optional.of(scalar);
+			}
+		}
+		return Optional.empty();
+	}
+
+	@SuppressWarnings("unused")
+	protected final Optional<NodeTuple> resolveTuple(final @NotNull String key, final int level, final boolean fill) {
+		Result result = this.resolveInternal(key, level, fill);
+		return Optional.ofNullable(result.tuple);
+	}
+
+	public static class Result {
+		Node node;
+		NodeTuple tuple;
+		Result(Node node, NodeTuple tuple) {
+			this.node = node;
+			this.tuple = tuple;
+		}
+	}
+
+	protected final Result resolveInternal(final @NotNull String key, final int level, final boolean fill) {
 		String[] parts = key.split("\\.");
 		StringBuilder keyBuilder = new StringBuilder();
 
 		Node node = this.yaml;
+		NodeTuple lastTuple = null;
 		iter:
 		for (int i = 0; i < (parts.length + level); i++) {
 			String part = parts[i];
@@ -281,6 +322,8 @@ public class ConfigurationReader implements ConfigReader {
 					Node keyNode = tuple.getKeyNode();
 					if (keyNode instanceof ScalarNode scalar && scalar.getValue().equals(tmpKey)) {
 						node = tuple.getValueNode();
+						lastTuple = tuple;
+
 						continue iter;
 					}
 				}
@@ -292,19 +335,24 @@ public class ConfigurationReader implements ConfigReader {
 					List<NodeTuple> tuples = mapping.getValue();
 
 					ScalarNode keyScalar = new ScalarNode(Tag.STR, key, null, null,
-							ScalarStyle.DOUBLE_QUOTED);
-					tuples.add(new NodeTuple(keyScalar, newNode));
+							ScalarStyle.PLAIN);
+					NodeTuple newTuple = new NodeTuple(keyScalar, newNode);
+					tuples.add(newTuple);
+					lastTuple = newTuple;
 				} else if (node instanceof SequenceNode sequence) {
 					List<Node> values = sequence.getValue();
 					values.add(newNode);
 				} else {
-					return Optional.empty();
+					return new Result(null, null);
 				}
 
 				node = newNode;
+				continue;
 			}
+
+			return new Result(null, null);
 		}
 
-		return Optional.ofNullable(node);
+		return new Result(node, lastTuple);
 	}
 }

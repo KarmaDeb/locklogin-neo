@@ -36,7 +36,9 @@ public interface ValueWriter<T> {
 	/**
 	 * Define the value as "required" (meaning no invalid value
 	 * can be provided). Marking a value as required, requires also
-	 * a default value
+	 * a default value. If no validator is provided, the value writer
+	 * itself will check automatically if the value type is the same
+	 * as the value requires
 	 * @param defaultValue the default value provider
 	 * @return the value writer
 	 */
