@@ -1,0 +1,57 @@
+name: Run Tests & Report Failures
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x gradlew
+
+      - name: Run tests
+        run: ./gradlew test --continue
+        continue-on-error: true
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/build/test-results/test/*.xml'
+          retention-days: 30
+
+      - name: Process failed tests
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          GH_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          # Find all JUnit XML test result files
+          TEST_FILES=$(find . -path '*/build/test-results/test/TEST-*.xml' -type f)
+          
+          if [ -z "$TEST_FILES" ]; then
+            echo "No test result files found."
+            exit 0
+          fi
+
+          # Run the Python script to process failed tests
+          python3 .github/scripts/failed_tests.py $TEST_FILES
