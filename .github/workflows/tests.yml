@@ -86,7 +86,7 @@ jobs:
         uses: andymckay/append-gist-action@ab30bf28df67017c7ad696500b218558c7c04db3
         with:
           token: ${{ secrets.GIST_TOKEN }}
-          gistURL: https://gist.githubusercontent.com/KarmaDeb/7b4703f4f108d887761b677beb35cf3a
+          gistURL: https://gist.githubusercontent.com/KarmaDeb/12423f1ab057054e243f214c1a09dfcb
           file: neologin-test-badge.svg
 
       -
