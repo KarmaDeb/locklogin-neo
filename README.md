@@ -1,5 +1,7 @@
 # LockLogin Neo
 
+![Tests status](https://gist.githubusercontent.com/KarmaDeb/12423f1ab057054e243f214c1a09dfcb/raw/neologin-test-badge.svg)
+
 LockLogin Neo is the third major iteration of the **LockLogin** Minecraft server authentication plugin. It is a complete ground-up refactor that learns from two previous codebases — **LockLoginReborn** (the last released version) and **LockLogin2** (an abandoned intermediate refactor) — combining their best ideas into a modern, modular, and extensible architecture designed for flexibility and multi-platform support.
 
 ## What is it?
