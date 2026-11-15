@@ -11,12 +11,18 @@ repositories {
 }
 
 dependencies {
-    compileOnly(project(':neo-common'))
     compileOnly('org.bukkit:bukkit:26.3-R0.1-SNAPSHOT')
 
     testImplementation platform('org.junit:junit-bom:6.0.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation(project(':neo-common')) {
+        exclude group: 'com.github.karmadeb', module: 'neo-api'
+        exclude group: 'com.github.karmadeb', module: 'neo-api-bridge'
+    }
+    implementation(project(':neo-api'))
+    implementation(project(':neo-api-bridge'))
 }
 
 test {
