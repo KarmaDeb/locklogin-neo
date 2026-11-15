@@ -25,6 +25,15 @@ public abstract class PersistenceManager<T> {
 	}
 
 	/**
+	 * Get the active driver
+	 * @return the driver
+	 */
+	@NotNull
+	public PersistenceDriver<?, ?> driver() {
+		return this.driver;
+	}
+
+	/**
 	 * Get the user manager
 	 * @return the user manager
 	 */

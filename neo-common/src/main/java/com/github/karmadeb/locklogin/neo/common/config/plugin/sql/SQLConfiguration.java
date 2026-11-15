@@ -197,7 +197,7 @@ public final class SQLConfiguration extends ConfigPart {
 												size > reader.getInt("pooling.size.minimum").orElse(DEFAULT_MIN_POOL_SIZE))
 								);
 
-						poolingSizeValue.constant(poolSize);
+						poolingSizeValue.required(poolSize).validator(obj -> obj instanceof ConfigWriter);
 					}).with("health",
 							"Configure lifetime and health check parameters")
 					.section((poolingHealth, poolingHealthValue) -> {
@@ -237,10 +237,10 @@ public final class SQLConfiguration extends ConfigPart {
 										raw instanceof Long valid && valid >= 250)
 								);
 
-						poolingHealthValue.constant(poolHealth);
+						poolingHealthValue.required(poolHealth).validator(obj -> obj instanceof ConfigWriter);
 					});
 
-			poolingValue.constant(schema);
+			poolingValue.required(schema).validator(obj -> obj instanceof ConfigWriter);
 		});
 	}
 }

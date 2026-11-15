@@ -20,6 +20,17 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface PersistenceDriver<C, T> extends RegistryItem {
 
+	enum FormatTarget {
+		/**
+		 * Format target for a table name
+		 */
+		TABLE_NAME,
+		/**
+		 * Format target for a field name
+		 */
+		FIELD_NAME
+	}
+
 	/**
 	 * Get the driver name
 	 * @return the name of the driver
@@ -28,6 +39,17 @@ public interface PersistenceDriver<C, T> extends RegistryItem {
 	default String name() {
 		return this.id().resource();
 	}
+
+	/**
+	 * Formats a name depending on the driver. This
+	 * is useful for special tables/fields which are also
+	 * a reserved driver keyword.
+	 * @param name the name to format
+	 * @param target the format target
+	 * @return the formatted value
+	 */
+    @NotNull
+	String format(final @NotNull String name, final @NotNull FormatTarget target);
 
 	/**
 	 * Get the driver provider

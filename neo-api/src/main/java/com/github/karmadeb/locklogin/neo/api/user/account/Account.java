@@ -55,14 +55,20 @@ public interface Account {
 	 * @param id the secret id
 	 * @return the secret
 	 */
-	Optional<Secret> get(final @NotNull NamespacedIdentity id);
+	Optional<String> get(final @NotNull NamespacedIdentity id);
 
 	/**
 	 * Put a secret into the account
 	 * @param id the secret ID
 	 * @param secret the secret value
 	 */
-	void put(final @NotNull NamespacedIdentity id, final @NotNull Secret secret);
+	void put(final @NotNull NamespacedIdentity id, final @NotNull String secret);
+
+	/**
+	 * Removes a secret from the account
+	 * @param id the secret ID
+	 */
+	void remove(final @NotNull NamespacedIdentity id);
 
 	/**
 	 * Get when the account was lastly disconnected
@@ -116,11 +122,14 @@ public interface Account {
 
 	/**
 	 * Get when the account issued its
-	 * registration request
+	 * registration request. As an account is not
+	 * necessarily registered, this method can still
+	 * return an empty optional, indicating the account
+	 * is not registered
 	 * @return when the account was registered
 	 */
 	@NotNull
-	LocalDateTime registeredAt();
+	Optional<LocalDateTime> registeredAt();
 
 	/**
 	 * Set when the account issued its
