@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
  * way of dealing with nested config paths
  * without having to get too dizzy
  */
+@SuppressWarnings("unused")
 public final class ConfigPath {
 
 	private final List<String> parts = new ArrayList<>();
@@ -136,4 +137,16 @@ public final class ConfigPath {
 	}
 
 	public record Walker(String from, Walker to) {}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj) return true;
+		if (!(obj instanceof ConfigPath)) return false;
+		return this.parts.equals(((ConfigPath) obj).parts);
+	}
+
+	@Override
+	public int hashCode() {
+		return this.parts.hashCode();
+	}
 }

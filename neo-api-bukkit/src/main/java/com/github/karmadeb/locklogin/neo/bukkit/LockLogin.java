@@ -2,13 +2,14 @@ package com.github.karmadeb.locklogin.neo.bukkit;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigRegistry;
 import com.github.karmadeb.locklogin.neo.api.extension.ExtensionManager;
-import com.github.karmadeb.locklogin.neo.common.config.registry.ConfigurationRegistry;
+import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationRegistry;
 import com.github.karmadeb.locklogin.neo.common.extension.ExtensionLoader;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * LockLogin API helper for bukkit environments
  */
+@SuppressWarnings("unused")
 public class LockLogin {
 
 	private static LockLogin instance;

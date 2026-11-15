@@ -6,6 +6,7 @@ import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPart;
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPath;
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigFile;
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.SchemaWriter;
+import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationRegistry;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,8 +59,8 @@ class ConfigurationRegistryTest {
 	@Test
 	void append_multipleParts_preservesOrder() {
 		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test.yaml"));
-		ConfigPart part1 = new TestPart(ConfigPath.empty());
-		ConfigPart part2 = new TestPart(ConfigPath.empty());
+		ConfigPart part1 = new TestPart(ConfigPath.of("section1"));
+		ConfigPart part2 = new TestPart(ConfigPath.of("section2"));
 
 		registry.append(file, part1);
 		registry.append(file, part2);
@@ -69,6 +70,115 @@ class ConfigurationRegistryTest {
 		assertEquals(2, parts.length);
 		assertSame(part2, parts[0]);
 		assertSame(part1, parts[1]);
+	}
+
+	@Test
+	void append_samePath_mergesParts() {
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-merge.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("name").string(v -> v.with(() -> "defaultName"));
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port").intNumber(v -> v.with(() -> 8080));
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// The two parts should be merged into a single part
+		ConfigPart[] parts = registry.parts(file);
+		assertEquals(1, parts.length);
+	}
+
+	@Test
+	void append_samePath_mergedSchema_appliesBothValues() throws IOException {
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-merge-values.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("name").string(v -> v.with(() -> "defaultName"));
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port").intNumber(v -> v.with(() -> 8080));
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// Verify file was created with both values
+		Path filePath = tempDir.resolve("test-merge-values.yaml");
+		assertTrue(Files.exists(filePath), "Config file should be created");
+
+		String content = Files.readString(filePath);
+		assertTrue(content.contains("defaultName"), "File should contain name from part1: " + content);
+		assertTrue(content.contains("8080"), "File should contain port from part2: " + content);
+	}
+
+	@Test
+	void append_samePath_overlappingKey_secondWins() throws IOException {
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-merge-overlap.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("name").string(v -> v.with(() -> "original"));
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("name").string(v -> v.with(() -> "overridden"));
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// Verify the second part's value wins for the overlapping key
+		Path filePath = tempDir.resolve("test-merge-overlap.yaml");
+		String content = Files.readString(filePath);
+		assertTrue(content.contains("overridden"), "File should contain overridden value: " + content);
+		assertFalse(content.contains("original"), "File should not contain original value: " + content);
+	}
+
+	@Test
+	void append_samePath_nestedSection_mergesSchemas() throws IOException {
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-merge-nested.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.of("server")) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("host").string(v -> v.with(() -> "localhost"));
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.of("server")) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port").intNumber(v -> v.with(() -> 9090));
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// Verify both values are in the server section
+		Path filePath = tempDir.resolve("test-merge-nested.yaml");
+		String content = Files.readString(filePath);
+		assertTrue(content.contains("server"), "Should contain server section: " + content);
+		assertTrue(content.contains("localhost"), "Should contain host from part1: " + content);
+		assertTrue(content.contains("9090"), "Should contain port from part2: " + content);
 	}
 
 	// --- parts() tests ---
@@ -790,6 +900,591 @@ class ConfigurationRegistryTest {
 		assertTrue(content.contains("preExisting"), "Original value preserved: " + content);
 		assertTrue(content.contains("derived-from-config"), "New derived value added: " + content);
 		assertTrue(content.contains("# Value derived from existing"), "Should contain derived comment: " + content);
+	}
+
+	// --- Same type merge tests ---
+
+	@Test
+	void append_samePath_sameType_otherValidatorOnly() throws IOException {
+		// Two parts with the same path, each defining a validator on the same key.
+		// The other part's value completely replaces the current part's value.
+		// Only part2's validator (n <= 65535) applies.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-merged-validators.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be positive").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n > 0);
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be <= 65535").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n <= 65535);
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// Default value 8080 passes part2's validator (8080 <= 65535)
+		Path filePath = tempDir.resolve("test-merged-validators.yaml");
+		String content = Files.readString(filePath);
+		assertTrue(content.contains("8080"), "Valid port should be preserved: " + content);
+	}
+
+	@Test
+	void append_samePath_sameType_otherValueReplaces() throws IOException {
+		// When two parts define the same key with the same type, the other part's value
+		// completely replaces the current part's value (including validator).
+		// Only part2's validator (n <= 65535) applies — part1's validator is discarded.
+		// The value -1 passes part2's validator, so it is preserved.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-merged-validators-invalid.yaml"));
+		Files.writeString(file.path(), "port: -1\n");
+
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be positive").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n > 0);
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be <= 65535").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n <= 65535);
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// Only part2's validator applies (-1 <= 65535 is true), so -1 is preserved
+		String content = Files.readString(file.path());
+		assertTrue(content.contains("-1"), "Value passing other validator should be preserved: " + content);
+	}
+
+	@Test
+	void append_samePath_sameType_otherValidatorRejects_replaced() throws IOException {
+		// Pre-create a config with a value that fails part2's validator.
+		// Only part2's validator (n <= 65535) applies — part1's validator is discarded.
+		// The value 70000 fails "<= 65535", so it should be replaced.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-merged-validators-second-fails.yaml"));
+		Files.writeString(file.path(), "port: 70000\n");
+
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be positive").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n > 0);
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be <= 65535").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n <= 65535);
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// 70000 fails part2's validator (<= 65535), so it should be replaced with the default
+		String content = Files.readString(file.path());
+		assertTrue(content.contains("8080"), "Invalid port should be replaced with default: " + content);
+		assertFalse(content.contains("70000"), "Invalid value should be removed: " + content);
+	}
+
+	// --- Complex merge tests ---
+
+	@Test
+	void append_samePath_complexMerge_nestedSections_merged() throws IOException {
+		// Two parts with the same path, each defining nested sections.
+		// The nested schemas should be recursively merged.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-complex-nested-merge.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.of("server")) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("host", "Server hostname").string(v -> v.with(() -> "localhost"));
+				writer.schema().with("network", "Network settings").section((supplier, value) -> {
+					SchemaWriter network = supplier.get();
+					network.with("interface", "Network interface").string(v2 -> v2.with(() -> "eth0"));
+					network.with("timeout", "Connection timeout").intNumber(v3 -> v3.with(() -> 5000));
+					value.with(() -> network);
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.of("server")) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port").intNumber(v -> v.with(() -> 9090));
+				writer.schema().with("network", "Network settings").section((supplier, value) -> {
+					SchemaWriter network = supplier.get();
+					network.with("retries", "Retry count").intNumber(v2 -> v2.with(() -> 3));
+					value.with(() -> network);
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		Path filePath = tempDir.resolve("test-complex-nested-merge.yaml");
+		String content = Files.readString(filePath);
+
+		// Verify server section contains values from both parts
+		assertTrue(content.contains("server"), "Should contain server section: " + content);
+		assertTrue(content.contains("localhost"), "Should contain host from part1: " + content);
+		assertTrue(content.contains("9090"), "Should contain port from part2: " + content);
+
+		// Verify nested network section is merged with values from both parts
+		assertTrue(content.contains("network"), "Should contain network section: " + content);
+		assertTrue(content.contains("eth0"), "Should contain interface from part1: " + content);
+		assertTrue(content.contains("5000"), "Should contain timeout from part1: " + content);
+		assertTrue(content.contains("3"), "Should contain retries from part2: " + content);
+	}
+
+	@Test
+	void append_samePath_complexMerge_stringWithStringList() throws IOException {
+		// Two parts with the same path: one defines a STRING, the other a STRING_LIST.
+		// The merge should combine them into a list.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-complex-string-list-merge.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("tags", "Application tags").list(v -> v.with(() -> List.of("alpha", "beta")));
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("tags", "Application tags").list(v -> v.with(() -> List.of("gamma", "delta")));
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		Path filePath = tempDir.resolve("test-complex-string-list-merge.yaml");
+		String content = Files.readString(filePath);
+
+		// Both lists should be combined
+		assertTrue(content.contains("alpha"), "Should contain alpha from part1: " + content);
+		assertTrue(content.contains("beta"), "Should contain beta from part1: " + content);
+		assertTrue(content.contains("gamma"), "Should contain gamma from part2: " + content);
+		assertTrue(content.contains("delta"), "Should contain delta from part2: " + content);
+	}
+
+	@Test
+	void append_samePath_complexMerge_sectionsList_merged() throws IOException {
+		// Two parts with the same path, each defining a sections() list (MAPPING_LIST).
+		// The merge should combine both lists.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-complex-sections-list-merge.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("plugins", "Plugin configurations").sections((supplier, value) -> {
+					List<SchemaWriter> plugins = new ArrayList<>();
+					SchemaWriter p1 = supplier.get();
+					p1.with("name", "Plugin name").string(v -> v.with(() -> "AuthPlugin"));
+					p1.with("enabled", "Plugin enabled").bool(v -> v.with(() -> true));
+					plugins.add(p1);
+					value.with(() -> plugins);
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("plugins", "Plugin configurations").sections((supplier, value) -> {
+					List<SchemaWriter> plugins = new ArrayList<>();
+					SchemaWriter p2 = supplier.get();
+					p2.with("name", "Plugin name").string(v -> v.with(() -> "CachePlugin"));
+					p2.with("enabled", "Plugin enabled").bool(v -> v.with(() -> false));
+					plugins.add(p2);
+					value.with(() -> plugins);
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		Path filePath = tempDir.resolve("test-complex-sections-list-merge.yaml");
+		String content = Files.readString(filePath);
+
+		// Both plugin lists should be combined
+		assertTrue(content.contains("plugins"), "Should contain plugins key: " + content);
+		assertTrue(content.contains("AuthPlugin"), "Should contain AuthPlugin from part1: " + content);
+		assertTrue(content.contains("CachePlugin"), "Should contain CachePlugin from part2: " + content);
+	}
+
+	@Test
+	void append_samePath_complexMerge_constantReplaces() throws IOException {
+		// Two parts with the same path: part2 defines a constant value for a key
+		// that part1 also defines. The constant should completely replace part1's value.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-complex-constant-replace.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("version", "Plugin version").string(v -> v.with(() -> "0.0.1"));
+				writer.schema().with("name", "Plugin name").string(v -> v.with(() -> "MyPlugin"));
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("version", "Plugin version", "Do not modify").string(v -> v.constant("2.0.0"));
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		Path filePath = tempDir.resolve("test-complex-constant-replace.yaml");
+		String content = Files.readString(filePath);
+
+		// Constant from part2 should replace part1's value
+		assertTrue(content.contains("2.0.0"), "Constant version should replace default: " + content);
+		assertFalse(content.contains("0.0.1"), "Original default should not appear: " + content);
+
+		// Non-overlapping key from part1 should still be present
+		assertTrue(content.contains("MyPlugin"), "Non-overlapping name should be preserved: " + content);
+	}
+
+	@Test
+	void append_samePath_threeWayMerge_allPartsCombined() throws IOException {
+		// Three parts with the same path, each defining different keys.
+		// All three should be merged into a single part.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-three-way-merge.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("name", "Plugin name").string(v -> v.with(() -> "ThreeWayPlugin"));
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port").intNumber(v -> v.with(() -> 8080));
+			}
+		};
+		ConfigPart part3 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("enabled", "Feature enabled").bool(v -> v.with(() -> true));
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.append(file, part3);
+
+		// All three parts should be merged into one
+		ConfigPart[] parts = registry.parts(file);
+		assertEquals(1, parts.length, "Three parts should be merged into one");
+
+		registry.configure().join();
+
+		Path filePath = tempDir.resolve("test-three-way-merge.yaml");
+		String content = Files.readString(filePath);
+
+		// All values from all three parts should be present
+		assertTrue(content.contains("ThreeWayPlugin"), "Should contain name from part1: " + content);
+		assertTrue(content.contains("8080"), "Should contain port from part2: " + content);
+		assertTrue(content.contains("true"), "Should contain enabled from part3: " + content);
+	}
+
+	@Test
+	void append_samePath_threeWayMerge_overlappingKeys_lastWins() throws IOException {
+		// Three parts with the same path, all defining the same key.
+		// The last part's value should win.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-three-way-overlap.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("name", "Plugin name").string(v -> v.with(() -> "first"));
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("name", "Plugin name").string(v -> v.with(() -> "second"));
+			}
+		};
+		ConfigPart part3 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("name", "Plugin name").string(v -> v.with(() -> "third"));
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.append(file, part3);
+		registry.configure().join();
+
+		Path filePath = tempDir.resolve("test-three-way-overlap.yaml");
+		String content = Files.readString(filePath);
+
+		// Last part's value should win
+		assertTrue(content.contains("third"), "Last part's value should win: " + content);
+		assertFalse(content.contains("first"), "First part's value should not appear: " + content);
+		assertFalse(content.contains("second"), "Second part's value should not appear: " + content);
+	}
+
+	// --- Validator non-merging tests ---
+	// These tests verify that merging validators never happens.
+	// The other schema's validator should always be the one that applies.
+
+	@Test
+	void append_samePath_stringToStringList_listValidatorOnly() throws IOException {
+		// Two parts with the same path: part1 defines a STRING, part2 defines a STRING_LIST.
+		// The merge combines them into a list, but only part2's (the list's) validator applies.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-string-to-list-validator.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("tag", "Single tag").string(v -> {
+					v.with(() -> "alpha");
+					v.validator(obj -> obj instanceof String s && s.startsWith("a"));
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("tag", "Tag list").list(v -> {
+					v.with(() -> List.of("beta", "gamma"));
+					v.validator(obj -> obj instanceof List<?> list && !list.isEmpty());
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		Path filePath = tempDir.resolve("test-string-to-list-validator.yaml");
+		String content = Files.readString(filePath);
+
+		// The merged list should contain values from both parts
+		assertTrue(content.contains("alpha"), "Should contain alpha from part1: " + content);
+		assertTrue(content.contains("beta"), "Should contain beta from part2: " + content);
+		assertTrue(content.contains("gamma"), "Should contain gamma from part2: " + content);
+	}
+
+	@Test
+	void append_samePath_stringListWithStringList_otherValidatorOnly() throws IOException {
+		// Two parts with the same path, both defining STRING_LIST with different validators.
+		// Only part2's (other's) validator should apply, not merged.
+		// Pre-create a config with a value that would fail part1's validator but pass part2's.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-list-list-validator.yaml"));
+		Files.writeString(file.path(), "tags:\n  - zeta\n");
+
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("tags", "Tag list", "Must start with a").list(v -> {
+					v.with(() -> List.of("alpha"));
+					v.validator(obj -> obj instanceof List<?> list && list.stream().allMatch(item -> item instanceof String s && s.startsWith("a")));
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("tags", "Tag list", "Must not be empty").list(v -> {
+					v.with(() -> List.of("beta"));
+					v.validator(obj -> obj instanceof List<?> list && !list.isEmpty());
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// "zeta" fails part1's validator (doesn't start with "a") but passes part2's (non-empty).
+		// Only part2's validator applies, so "zeta" should be preserved.
+		String content = Files.readString(file.path());
+		assertTrue(content.contains("zeta"), "Value passing other validator should be preserved: " + content);
+	}
+
+	@Test
+	void append_samePath_mappingToMappingList_listValidatorOnly() throws IOException {
+		// Two parts with the same path: part1 defines a MAPPING (section), part2 defines a MAPPING_LIST (sections).
+		// The merge combines them, but only part2's (the list's) validator applies.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-mapping-to-list-validator.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("plugin", "Single plugin").section((supplier, valueWriter) -> {
+					SchemaWriter p = supplier.get();
+					p.with("name", "Plugin name").string(v -> v.with(() -> "SinglePlugin"));
+					valueWriter.with(() -> p);
+					valueWriter.validator(_ -> true); // part1's validator — should NOT apply
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("plugin", "Plugin list").sections((supplier, valueWriter) -> {
+					List<SchemaWriter> plugins = new ArrayList<>();
+					SchemaWriter p2 = supplier.get();
+					p2.with("name", "Plugin name").string(v -> v.with(() -> "ListPlugin"));
+					plugins.add(p2);
+					valueWriter.with(() -> plugins);
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		Path filePath = tempDir.resolve("test-mapping-to-list-validator.yaml");
+		String content = Files.readString(filePath);
+
+		// Both plugins should appear in the merged list
+		assertTrue(content.contains("SinglePlugin"), "Should contain SinglePlugin from part1: " + content);
+		assertTrue(content.contains("ListPlugin"), "Should contain ListPlugin from part2: " + content);
+	}
+
+	@Test
+	void append_samePath_mappingListToMapping_otherValidatorOnly() throws IOException {
+		// Two parts with the same path: part1 defines a MAPPING_LIST (sections), part2 defines a MAPPING (section).
+		// The merge combines them, but only part2's (the other's) validator applies.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-list-to-mapping-validator.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("plugin", "Plugin list").sections((supplier, valueWriter) -> {
+					List<SchemaWriter> plugins = new ArrayList<>();
+					SchemaWriter p1 = supplier.get();
+					p1.with("name", "Plugin name").string(v -> v.with(() -> "ListPlugin"));
+					plugins.add(p1);
+					valueWriter.with(() -> plugins);
+					valueWriter.validator(obj -> obj instanceof List<?> list && list.size() > 5); // part1's validator — should NOT apply
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("plugin", "Single plugin").section((supplier, valueWriter) -> {
+					SchemaWriter p = supplier.get();
+					p.with("name", "Plugin name").string(v -> v.with(() -> "SinglePlugin"));
+					valueWriter.with(() -> p);
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		Path filePath = tempDir.resolve("test-list-to-mapping-validator.yaml");
+		String content = Files.readString(filePath);
+
+		// Both plugins should appear in the merged result
+		assertTrue(content.contains("ListPlugin"), "Should contain ListPlugin from part1: " + content);
+		assertTrue(content.contains("SinglePlugin"), "Should contain SinglePlugin from part2: " + content);
+	}
+
+	@Test
+	void append_samePath_mappingWithMapping_otherValidatorOnly() throws IOException {
+		// Two parts with the same path, both defining a MAPPING (section) with validators.
+		// Only part2's (other's) validator should apply, not merged.
+		// Pre-create a config with a value that would fail part1's validator but pass part2's.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-mapping-mapping-validator.yaml"));
+		Files.writeString(file.path(), "server:\n  port: 70000\n");
+
+		ConfigPart part1 = new TestPart(ConfigPath.of("server")) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be positive").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n > 0);
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.of("server")) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be <= 100000").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n <= 100000);
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// 70000 fails part1's validator (n > 0 is true, but this is same-type overlap so other replaces entirely).
+		// Only part2's validator applies (70000 <= 100000 is true), so 70000 should be preserved.
+		String content = Files.readString(file.path());
+		assertTrue(content.contains("70000"), "Value passing other validator should be preserved: " + content);
+	}
+
+	@Test
+	void append_samePath_complexMerge_validatorsWithNestedSections() throws IOException {
+		// Two parts with the same path, each defining validators on nested section keys.
+		// The merged validators should apply to the nested values.
+		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-validators-nested-merge.yaml"));
+		ConfigPart part1 = new TestPart(ConfigPath.of("server")) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be positive").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n > 0);
+				});
+			}
+		};
+		ConfigPart part2 = new TestPart(ConfigPath.of("server")) {
+			@Override
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+				writer.schema().with("port", "Server port", "Must be <= 65535").intNumber(v -> {
+					v.with(() -> 8080);
+					v.validator(obj -> obj instanceof Integer n && n <= 65535);
+				});
+			}
+		};
+
+		registry.append(file, part1);
+		registry.append(file, part2);
+		registry.configure().join();
+
+		// A valid value within both ranges should be preserved
+		Path filePath = tempDir.resolve("test-validators-nested-merge.yaml");
+		String content = Files.readString(filePath);
+		assertTrue(content.contains("server"), "Should contain server section: " + content);
+		assertTrue(content.contains("8080"), "Valid port should be preserved: " + content);
 	}
 
 	// --- Helper classes ---

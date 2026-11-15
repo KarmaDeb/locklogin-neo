@@ -4,7 +4,7 @@ import com.github.karmadeb.locklogin.neo.api.configuration.schema.PropertyWriter
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.SchemaWriter;
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.ValueWriter;
 import com.github.karmadeb.locklogin.neo.common.config.ConfigurationWriter;
-import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationValueWriter.Type;
+import com.github.karmadeb.locklogin.neo.api.configuration.schema.ValueWriter.Type;
 import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
 import org.yaml.snakeyaml.nodes.MappingNode;

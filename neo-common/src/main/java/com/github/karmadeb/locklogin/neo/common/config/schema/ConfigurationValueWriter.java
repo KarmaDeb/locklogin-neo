@@ -1,71 +1,14 @@
 package com.github.karmadeb.locklogin.neo.common.config.schema;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.ValueWriter;
-import com.github.karmadeb.locklogin.neo.api.SneakyFunction;
-import com.github.karmadeb.locklogin.neo.common.config.ConfigurationWriter;
 import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
-
-	public enum Type implements Function<String, Object>, Predicate<Object> {
-		STRING(s -> s, obj -> obj instanceof String),
-		BYTE(Byte::parseByte, obj -> obj instanceof Byte),
-		SHORT(Short::parseShort, obj -> obj instanceof Short),
-		INT(Integer::parseInt, obj -> obj instanceof Integer),
-		LONG(Long::parseLong, obj -> obj instanceof Long),
-		FLOAT(Float::parseFloat, obj -> obj instanceof Float),
-		DOUBLE(Double::parseDouble, obj -> obj instanceof Double),
-		BOOLEAN(Boolean::parseBoolean, obj -> obj instanceof Boolean),
-		MAPPING(obj -> obj instanceof ConfigurationWriter),
-		STRING_LIST(obj -> obj instanceof List<?> l && (l.isEmpty() || l.getFirst() instanceof String)),
-		MAPPING_LIST(obj -> obj instanceof List<?> l && (l.isEmpty() || l.getFirst() instanceof ConfigurationWriter));
-
-		private final SneakyFunction<String, Object> transposer;
-		private final Predicate<Object> typeCheck;
-
-		Type(final Predicate<Object> typeCheck) {
-			this(_ -> { throw new UnsupportedOperationException(); }, typeCheck);
-		}
-
-		Type(final SneakyFunction<String, Object> transposer, final Predicate<Object> typeCheck) {
-			this.transposer = transposer;
-			this.typeCheck = typeCheck;
-		}
-
-		/**
-		 * Applies this function to the given argument.
-		 *
-		 * @param s the function argument
-		 * @return the function result
-		 */
-		@Override
-		public Object apply(final String s) {
-			try {
-				return this.transposer.apply(s);
-			} catch (Exception ex) {
-				throw new RuntimeException(ex);
-			}
-		}
-
-		/**
-		 * Evaluates this predicate on the given argument.
-		 *
-		 * @param o the input argument
-		 * @return {@code true} if the input argument matches the predicate,
-		 * otherwise {@code false}
-		 */
-		@Override
-		public boolean test(final Object o) {
-			return this.typeCheck.test(o);
-		}
-	}
 
 	private final String key;
 	private final String[] comment;
@@ -83,31 +26,44 @@ public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 		this.type = type;
 	}
 
-	public Type type() {
+	public ConfigurationValueWriter(final ValueWriter<T> writer) {
+		this.key = writer.key();
+		this.comment = writer.comment();
+		this.type = writer.type();
+		this.constant = writer.constant().orElse(null);
+		this.requiredValue = writer.required().orElse(null);
+		this.defaultValue = writer.with().orElse(null);
+		this.validator = writer.validator().orElse(null);
+	}
+
+	@Override
+	public @NotNull Type type() {
 		return this.type;
 	}
 
-	public String key() {
+	@Override
+	public @NotNull String key() {
 		return this.key;
 	}
 
-	public String[] comment() {
+	@Override
+	public String @NotNull [] comment() {
 		return this.comment;
 	}
 
-	public Optional<T> constant() {
+	public @NotNull Optional<T> constant() {
 		return Optional.ofNullable(this.constant);
 	}
 
-	public Optional<Supplier<T>> required() {
+	public @NotNull Optional<Supplier<T>> required() {
 		return Optional.ofNullable(this.requiredValue);
 	}
 
-	public Optional<Supplier<T>> with() {
+	public @NotNull Optional<Supplier<T>> with() {
 		return Optional.ofNullable(this.defaultValue);
 	}
 
-	public Optional<Predicate<Object>> validator() {
+	public @NotNull Optional<Predicate<Object>> validator() {
 		return Optional.ofNullable(this.validator);
 	}
 
@@ -120,7 +76,7 @@ public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 	 * @return the value writer
 	 */
 	@Override
-	public ConfigurationValueWriter<T> constant(final @NotNull T value) {
+	public @NotNull ConfigurationValueWriter<T> constant(final @NotNull T value) {
 		this.constant = value;
 		this.requiredValue = () -> value;
 		this.defaultValue = () -> value;
@@ -138,7 +94,7 @@ public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 	 * @return the value writer
 	 */
 	@Override
-	public ConfigurationValueWriter<T> required(final @NotNull Supplier<T> defaultValue) {
+	public @NotNull ConfigurationValueWriter<T> required(final @NotNull Supplier<T> defaultValue) {
 		this.constant = null;
 
 		this.requiredValue = defaultValue;
@@ -158,7 +114,7 @@ public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 	 * @return the value writer
 	 */
 	@Override
-	public ConfigurationValueWriter<T> with(@NotNull Supplier<T> defaultValue) {
+	public @NotNull ConfigurationValueWriter<T> with(@NotNull Supplier<T> defaultValue) {
 		this.constant = null;
 		this.defaultValue = defaultValue;
 
@@ -177,7 +133,7 @@ public final class ConfigurationValueWriter<T> implements ValueWriter<T> {
 	 * @return the value writer
 	 */
 	@Override
-	public ConfigurationValueWriter<T> validator(final @NotNull Predicate<Object> value) {
+	public @NotNull ConfigurationValueWriter<T> validator(final @NotNull Predicate<Object> value) {
 		this.validator = value;
 		return this;
 	}

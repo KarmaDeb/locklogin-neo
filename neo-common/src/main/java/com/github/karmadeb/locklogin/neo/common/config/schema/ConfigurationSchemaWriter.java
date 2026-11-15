@@ -6,18 +6,16 @@ import com.github.karmadeb.locklogin.neo.api.configuration.schema.SchemaWriter;
 import com.github.karmadeb.locklogin.neo.common.config.ConfigurationWriter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.UnmodifiableView;
 import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.SequenceNode;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -25,7 +23,7 @@ import java.util.stream.Collectors;
 public class ConfigurationSchemaWriter implements SchemaWriter {
 
 	private final ConfigurationWriter writer;
-	final Map<String, ConfigurationValueWriter<?>> values = new HashMap<>();
+	final Map<String, ConfigurationValueWriter<?>> values = new LinkedHashMap<>();
 
 	@Contract("null -> fail")
 	public ConfigurationSchemaWriter(final ConfigurationWriter writer) {
@@ -52,6 +50,50 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 	@Override
 	public ConfigWriter build() {
 		return this.writer;
+	}
+
+	/**
+	 * Merge the current schema definition with the
+	 * other. This method returns a modified schema writer
+	 * with a combination of this schema writer and the other
+	 * schema writer. If incompatible types are found,
+	 * the other schema is preserved. Alternatively, if
+	 * compatible types are found (mapping & mapping list) or
+	 * (string & string list) or (mapping list & mapping list) or
+	 * (string list & string list), its generators are also merged
+	 * to create:
+	 * (mapping + mapping list = mapping list&mapping)
+	 * (string + string list = string list&string)
+	 * (mapping list + mapping list = mapping list1&mapping list2)
+	 * (string list + string list = string list1&string list2)
+	 * @param other the other schema
+	 * @return the modified schema
+	 */
+	@Override
+	public @NotNull SchemaWriter merge(final @NotNull SchemaWriter other) {
+		ConfigurationSchemaWriter merged = new ConfigurationSchemaWriter(this.writer);
+		merged.values.putAll(SchemaMerger.merge(this, other));
+
+		return merged;
+	}
+
+	/**
+	 * Get the current schema values. The entire map set is
+	 * a snapshot of the current values, meaning modifications
+	 * won't and should not affect the schema
+	 *
+	 * @return the schema values
+	 */
+	@Override
+	public @NotNull @Unmodifiable Map<String, @UnmodifiableView ConfigurationValueWriter<?>> values() {
+		return this.values.entrySet()
+				.stream()
+				.map(entry -> {
+					String key = entry.getKey();
+					ConfigurationValueWriter<?> value = entry.getValue();
+
+					return Map.entry(key, new ConfigurationValueWriter<>(value));
+				}).collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue));
 	}
 
 	@Contract("null -> fail")
@@ -112,7 +154,7 @@ public class ConfigurationSchemaWriter implements SchemaWriter {
 		}
 
 		String[] comments = value.comment();
-		if (comments != null && comments.length > 0) {
+		if (comments.length > 0) {
 			targetWriter.comment(key, comments);
 		}
 	}

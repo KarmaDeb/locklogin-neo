@@ -470,4 +470,311 @@ class ConfigurationSchemaWriterTest {
 		ConfigurationWriter reader = new ConfigurationWriter(root);
 		assertEquals(0, reader.yaml().getValue().size());
 	}
+
+	// --- Schema merge() tests ---
+
+	@Test
+	void schema_merge_replacesExistingKey() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("name").string(v -> v.with(() -> "original"));
+		schema.with("port").intNumber(v -> v.with(() -> 8080));
+
+		// Create another schema with overlapping keys
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("name").string(v -> v.with(() -> "merged"));
+		other.with("host").string(v -> v.with(() -> "localhost"));
+
+		SchemaWriter result = schema.merge(other);
+
+		// Should return a different schema instance
+		assertNotSame(schema, result);
+		// Original schema should be unchanged
+		assertEquals(2, schema.values.size());
+		// The merged result should have all keys
+		assertEquals(3, ((ConfigurationSchemaWriter) result).values.size());
+		assertTrue(((ConfigurationSchemaWriter) result).values.containsKey("name"));
+		// Since neither schema uses constant(), the merged value should not be constant
+		assertNull(((ConfigurationSchemaWriter) result).values.get("name").constant().orElse(null));
+		// The other's with() value should replace this's with() value
+		assertEquals("merged", ((ConfigurationSchemaWriter) result).values.get("name").with().orElseThrow().get());
+		assertTrue(((ConfigurationSchemaWriter) result).values.containsKey("port"));
+		assertTrue(((ConfigurationSchemaWriter) result).values.containsKey("host"));
+	}
+
+	@Test
+	void schema_merge_addsNewKeys() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("name").string(v -> v.with(() -> "default"));
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("port").intNumber(v -> v.with(() -> 9090));
+		other.with("enabled").bool(v -> v.with(() -> true));
+
+		SchemaWriter result = schema.merge(other);
+
+		// Merged result should have all keys
+		assertEquals(3, ((ConfigurationSchemaWriter) result).values.size());
+		assertTrue(((ConfigurationSchemaWriter) result).values.containsKey("name"));
+		assertTrue(((ConfigurationSchemaWriter) result).values.containsKey("port"));
+		assertTrue(((ConfigurationSchemaWriter) result).values.containsKey("enabled"));
+	}
+
+	@Test
+	void schema_merge_appliesMergedValues() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("name").string(v -> v.with(() -> "original"));
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("name").string(v -> v.with(() -> "overridden"));
+
+		SchemaWriter merged = schema.merge(other);
+
+		MappingNode root = new MappingNode(Tag.MAP, new ArrayList<>(), FlowStyle.AUTO);
+		((ConfigurationSchemaWriter) merged).apply(root);
+
+		ConfigurationWriter configResult = new ConfigurationWriter(root);
+		Optional<String> value = configResult.getString("name");
+		assertTrue(value.isPresent());
+		assertEquals("overridden", value.get());
+	}
+
+	@Test
+	void schema_merge_null_throwsNullPointerException() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		// noinspection DataFlowIssue
+		assertThrows(NullPointerException.class, () -> schema.merge(null));
+	}
+
+	@Test
+	void schema_merge_preservesNonOverlappingKeys() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("name").string(v -> v.with(() -> "default"));
+		schema.with("port").intNumber(v -> v.with(() -> 8080));
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("host").string(v -> v.with(() -> "localhost"));
+
+		SchemaWriter result = schema.merge(other);
+
+		// All three keys should be present in the merged result
+		assertEquals(3, ((ConfigurationSchemaWriter) result).values.size());
+		assertEquals("default", ((ConfigurationSchemaWriter) result).values.get("name").with().orElseThrow().get());
+		assertEquals(8080, ((ConfigurationSchemaWriter) result).values.get("port").with().orElseThrow().get());
+		assertEquals("localhost", ((ConfigurationSchemaWriter) result).values.get("host").with().orElseThrow().get());
+	}
+
+	@Test
+	void schema_merge_constantReplacesNonConstant() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("name").string(v -> v.with(() -> "original"));
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("name").string(v -> v.constant("constant-value"));
+
+		SchemaWriter result = schema.merge(other);
+
+		// The constant value should completely replace the non-constant value
+		assertEquals("constant-value", ((ConfigurationSchemaWriter) result).values.get("name").constant().orElse(null));
+		assertEquals("constant-value", ((ConfigurationSchemaWriter) result).values.get("name").with().orElseThrow().get());
+	}
+
+	@Test
+	void schema_merge_stringListWithStringList() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("tags").list(v -> v.with(() -> List.of("alpha", "beta")));
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("tags").list(v -> v.with(() -> List.of("gamma", "delta")));
+
+		SchemaWriter result = schema.merge(other);
+
+		// noinspection unchecked
+		List<String> mergedList = (List<String>) ((ConfigurationSchemaWriter) result).values.get("tags").with().orElseThrow().get();
+		assertEquals(4, mergedList.size());
+		assertEquals("alpha", mergedList.get(0));
+		assertEquals("beta", mergedList.get(1));
+		assertEquals("gamma", mergedList.get(2));
+		assertEquals("delta", mergedList.get(3));
+	}
+
+	@Test
+	void schema_merge_stringWithStringList() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("tags").string(v -> v.with(() -> "single"));
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("tags").list(v -> v.with(() -> List.of("alpha", "beta")));
+
+		SchemaWriter result = schema.merge(other);
+
+		// noinspection unchecked
+		List<String> mergedList = (List<String>) ((ConfigurationSchemaWriter) result).values.get("tags").with().orElseThrow().get();
+		assertEquals(3, mergedList.size());
+		assertEquals("alpha", mergedList.get(0));
+		assertEquals("beta", mergedList.get(1));
+		assertEquals("single", mergedList.get(2));
+	}
+
+	@Test
+	void schema_merge_mappingListWithMappingList() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("servers").sections((supplier, value) -> {
+			List<SchemaWriter> schemas = new ArrayList<>();
+			SchemaWriter s1 = supplier.get();
+			s1.with("host").string(v -> v.with(() -> "server1"));
+			schemas.add(s1);
+			value.with(() -> schemas);
+		});
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("servers").sections((supplier, value) -> {
+			List<SchemaWriter> schemas = new ArrayList<>();
+			SchemaWriter s2 = supplier.get();
+			s2.with("host").string(v -> v.with(() -> "server2"));
+			schemas.add(s2);
+			value.with(() -> schemas);
+		});
+
+		SchemaWriter result = schema.merge(other);
+
+		// noinspection unchecked
+		List<SchemaWriter> mergedList = (List<SchemaWriter>) ((ConfigurationSchemaWriter) result).values.get("servers").with().orElseThrow().get();
+		assertEquals(2, mergedList.size());
+	}
+
+	@Test
+	void schema_merge_mappingWithMapping() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("database").section((supplier, value) -> {
+			SchemaWriter dbSchema = supplier.get();
+			dbSchema.with("host").string(v -> v.with(() -> "localhost"));
+			value.with(() -> dbSchema);
+		});
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("database").section((supplier, value) -> {
+			SchemaWriter dbSchema = supplier.get();
+			dbSchema.with("port").intNumber(v -> v.with(() -> 5432));
+			value.with(() -> dbSchema);
+		});
+
+		SchemaWriter result = schema.merge(other);
+
+		// The merged schema should have both host and port
+		SchemaWriter mergedSchema = (SchemaWriter) ((ConfigurationSchemaWriter) result).values.get("database").with().orElseThrow().get();
+		assertInstanceOf(ConfigurationSchemaWriter.class, mergedSchema);
+		ConfigurationSchemaWriter mergedConfig = (ConfigurationSchemaWriter) mergedSchema;
+		assertTrue(mergedConfig.values.containsKey("host"));
+		assertTrue(mergedConfig.values.containsKey("port"));
+		assertEquals("localhost", mergedConfig.values.get("host").with().orElseThrow().get());
+		assertEquals(5432, mergedConfig.values.get("port").with().orElseThrow().get());
+	}
+
+	@Test
+	void schema_merge_mappingWithMappingList() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("servers").section((supplier, value) -> {
+			SchemaWriter dbSchema = supplier.get();
+			dbSchema.with("host").string(v -> v.with(() -> "single"));
+			value.with(() -> dbSchema);
+		});
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("servers").sections((supplier, value) -> {
+			List<SchemaWriter> schemas = new ArrayList<>();
+			SchemaWriter s1 = supplier.get();
+			s1.with("host").string(v -> v.with(() -> "server1"));
+			schemas.add(s1);
+			value.with(() -> schemas);
+		});
+
+		SchemaWriter result = schema.merge(other);
+
+		// noinspection unchecked
+		List<SchemaWriter> mergedList = (List<SchemaWriter>) ((ConfigurationSchemaWriter) result).values.get("servers").with().orElseThrow().get();
+		assertEquals(2, mergedList.size());
+	}
+
+	@Test
+	void schema_merge_mappingListWithMapping() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("servers").sections((supplier, value) -> {
+			List<SchemaWriter> schemas = new ArrayList<>();
+			SchemaWriter s1 = supplier.get();
+			s1.with("host").string(v -> v.with(() -> "server1"));
+			schemas.add(s1);
+			value.with(() -> schemas);
+		});
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("servers").section((supplier, value) -> {
+			SchemaWriter dbSchema = supplier.get();
+			dbSchema.with("host").string(v -> v.with(() -> "single"));
+			value.with(() -> dbSchema);
+		});
+
+		SchemaWriter result = schema.merge(other);
+
+		// noinspection unchecked
+		List<SchemaWriter> mergedList = (List<SchemaWriter>) ((ConfigurationSchemaWriter) result).values.get("servers").with().orElseThrow().get();
+		assertEquals(2, mergedList.size());
+	}
+
+	@Test
+	void schema_merge_validatorsCombined() {
+		ConfigurationWriter writer = createWriter();
+		ConfigurationSchemaWriter schema = new ConfigurationSchemaWriter(writer);
+
+		schema.with("port").intNumber(v -> {
+			v.with(() -> 8080);
+			v.validator(obj -> obj instanceof Integer && (Integer) obj > 0);
+		});
+
+		ConfigurationWriter otherWriter = createWriter();
+		ConfigurationSchemaWriter other = new ConfigurationSchemaWriter(otherWriter);
+		other.with("port").intNumber(v -> {
+			v.with(() -> 9090);
+			v.validator(obj -> obj instanceof Integer && (Integer) obj < 10000);
+		});
+
+		SchemaWriter result = schema.merge(other);
+
+		// The merged value should have a combined validator
+		assertTrue(((ConfigurationSchemaWriter) result).values.get("port").validator().isPresent());
+	}
 }
