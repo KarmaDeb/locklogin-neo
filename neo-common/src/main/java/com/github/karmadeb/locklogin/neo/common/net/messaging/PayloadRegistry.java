@@ -1,16 +1,15 @@
-package com.github.karmadeb.locklogin.neo.common.messaging;
+package com.github.karmadeb.locklogin.neo.common.net.messaging;
 
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
-import com.github.karmadeb.locklogin.neo.common.SneakyFunction;
-import com.github.karmadeb.locklogin.neo.common.buffers.NetBufferReader;
-import com.github.karmadeb.locklogin.neo.common.messaging.payload.NeoPayload;
+import com.github.karmadeb.locklogin.neo.api.SneakyFunction;
+import com.github.karmadeb.locklogin.neo.common.net.buffers.NetBufferReader;
+import com.github.karmadeb.locklogin.neo.common.net.messaging.payload.NeoPayload;
 import org.jetbrains.annotations.Contract;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 public final class PayloadRegistry {
 

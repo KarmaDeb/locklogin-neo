@@ -10,6 +10,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/neo-api" />
             <option value="$PROJECT_DIR$/neo-api-bridge" />
+            <option value="$PROJECT_DIR$/neo-api-bukkit" />
             <option value="$PROJECT_DIR$/neo-common" />
           </set>
         </option>

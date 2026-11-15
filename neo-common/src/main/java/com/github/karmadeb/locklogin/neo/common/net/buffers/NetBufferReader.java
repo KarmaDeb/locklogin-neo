@@ -1,4 +1,4 @@
-package com.github.karmadeb.locklogin.neo.common.buffers;
+package com.github.karmadeb.locklogin.neo.common.net.buffers;
 
 import org.jetbrains.annotations.Contract;
 
@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-import static com.github.karmadeb.locklogin.neo.common.buffers.NetBufferWriter.*;
+import static com.github.karmadeb.locklogin.neo.common.net.buffers.NetBufferWriter.*;
 
 /**
  * Represents a buffer of bytes reader.

@@ -1,4 +1,4 @@
-package com.github.karmadeb.locklogin.neo.common.buffers;
+package com.github.karmadeb.locklogin.neo.common.net.buffers;
 
 import org.jetbrains.annotations.Contract;
 

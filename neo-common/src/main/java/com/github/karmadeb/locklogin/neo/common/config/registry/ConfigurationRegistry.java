@@ -119,7 +119,7 @@ public final class ConfigurationRegistry extends ConfigRegistry {
 			}
 
 			ConfigurationWriter writer = new ConfigurationWriter(node);
-			part.init(writer);
+			part.init(writer, writer);
 
 			schemas.put(writer.schema(), node);
 		}

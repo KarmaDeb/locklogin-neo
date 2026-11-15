@@ -1,8 +1,8 @@
-package com.github.karmadeb.locklogin.neo.common.messaging.payload;
+package com.github.karmadeb.locklogin.neo.common.net.messaging.payload;
 
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.messaging.protocol.payload.Payload;
-import com.github.karmadeb.locklogin.neo.common.buffers.NetBufferWriter;
+import com.github.karmadeb.locklogin.neo.common.net.buffers.NetBufferWriter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 

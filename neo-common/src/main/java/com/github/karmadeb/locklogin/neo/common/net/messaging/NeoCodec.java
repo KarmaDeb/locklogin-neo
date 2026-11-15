@@ -1,12 +1,12 @@
-package com.github.karmadeb.locklogin.neo.common.messaging;
+package com.github.karmadeb.locklogin.neo.common.net.messaging;
 
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.messaging.protocol.Protocol;
 import com.github.karmadeb.locklogin.neo.api.messaging.protocol.payload.Codec;
-import com.github.karmadeb.locklogin.neo.common.buffers.NetBufferReader;
-import com.github.karmadeb.locklogin.neo.common.buffers.NetBufferWriter;
-import com.github.karmadeb.locklogin.neo.common.messaging.payload.NeoPayload;
-import com.github.karmadeb.locklogin.neo.common.messaging.payload.UserAuthPayload;
+import com.github.karmadeb.locklogin.neo.common.net.buffers.NetBufferReader;
+import com.github.karmadeb.locklogin.neo.common.net.buffers.NetBufferWriter;
+import com.github.karmadeb.locklogin.neo.common.net.messaging.payload.NeoPayload;
+import com.github.karmadeb.locklogin.neo.common.net.messaging.payload.UserAuthPayload;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;

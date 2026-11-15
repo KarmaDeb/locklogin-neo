@@ -10,16 +10,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class ConfigRegistry {
 
-	private static ConfigRegistry registry;
-
-	protected ConfigRegistry() {
-		if (ConfigRegistry.registry != null) {
-			return;
-		}
-
-		ConfigRegistry.registry = this;
-	}
-
 	/**
 	 * Append a part to a configuration file
 	 * @param file the file to append
@@ -33,17 +23,4 @@ public abstract class ConfigRegistry {
 	 * @return the parts
 	 */
 	public abstract ConfigPart @NotNull[] parts(final @NotNull ConfigFile file);
-
-	/**
-	 * Get the config registry. This method throws
-	 * if the registry has not been yet initialized
-	 * @return the registry
-	 */
-	public static ConfigRegistry registry() throws IllegalStateException {
-		if (ConfigRegistry.registry == null) {
-			throw new IllegalStateException();
-		}
-
-		return ConfigRegistry.registry;
-	}
 }

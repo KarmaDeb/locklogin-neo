@@ -1,7 +1,7 @@
 package com.github.karmadeb.locklogin.neo.common.config.schema;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.ValueWriter;
-import com.github.karmadeb.locklogin.neo.common.SneakyFunction;
+import com.github.karmadeb.locklogin.neo.api.SneakyFunction;
 import com.github.karmadeb.locklogin.neo.common.config.ConfigurationWriter;
 import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.nodes.ScalarNode;

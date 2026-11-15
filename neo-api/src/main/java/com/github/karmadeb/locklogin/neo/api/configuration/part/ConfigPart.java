@@ -2,27 +2,13 @@ package com.github.karmadeb.locklogin.neo.api.configuration.part;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigReader;
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigWriter;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Objects;
 
 /**
  * Represents a part in the configuration file. This can be used
  * by extensions to register their own configuration "sections"
  */
 public abstract class ConfigPart {
-
-	protected final ConfigReader reader;
-
-	/**
-	 * Create a new configuration part
-	 * @param reader the part reader
-	 */
-	@Contract("null -> fail")
-	protected ConfigPart(final ConfigReader reader) {
-		this.reader = Objects.requireNonNull(reader);
-	}
 
 	/**
 	 * Get the part path. This is used internally
@@ -36,7 +22,8 @@ public abstract class ConfigPart {
 
 	/**
 	 * Initialize the configuration
-	 * @param writer the
+	 * @param reader the reader
+	 * @param writer the writer
 	 */
-	public abstract void init(final @NotNull ConfigWriter writer);
+	public abstract void init(final @NotNull ConfigReader reader, final @NotNull ConfigWriter writer);
 }

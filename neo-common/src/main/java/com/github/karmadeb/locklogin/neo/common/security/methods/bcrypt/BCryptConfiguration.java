@@ -8,9 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class BCryptConfiguration extends ConfigPart {
 
-	BCryptConfiguration(final @NotNull ConfigReader reader) {
-		super(reader);
-	}
+	private ConfigReader reader;
 
 	/**
 	 * Get the part path. This is used internally
@@ -33,10 +31,13 @@ public class BCryptConfiguration extends ConfigPart {
 	/**
 	 * Initialize the configuration
 	 *
-	 * @param writer the
+	 * @param reader the reader
+	 * @param writer the writer
 	 */
 	@Override
-	public void init(final @NotNull ConfigWriter writer) {
+	public void init(final @NotNull ConfigReader reader, final @NotNull ConfigWriter writer) {
+		this.reader = reader;
+
 		writer.schema().with("cost", "Bcrypt parameter cost")
 				.intNumber(value -> value.required(BcryptHash.DEFAULT_COST)
 						.validator(obj -> obj instanceof Number n && n.intValue() >= BcryptHash.DEFAULT_COST))

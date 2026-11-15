@@ -1,4 +1,4 @@
-package com.github.karmadeb.locklogin.neo.common.messaging;
+package com.github.karmadeb.locklogin.neo.common.net.messaging;
 
 import com.github.karmadeb.locklogin.neo.api.messaging.Destination;
 import com.github.karmadeb.locklogin.neo.api.messaging.protocol.payload.Envelope;

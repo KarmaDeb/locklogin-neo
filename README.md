@@ -88,7 +88,7 @@ public class MyModule implements PluginModule<MyPlugin> {
 
 The current system reimagines extensions from the ground up:
 
-- **NeoExtension base class** — extensions extend the abstract `NeoExtension` class (which implements `Extension`), gaining access to a pre-configured `ExtensionRegistry`, `ExtensionDescription`, and helper methods like `id(String resource)` for namespaced resource identification.
+- **NeoExtension base class** — extensions extend the abstract `NeoExtension` class (which implements `Extension`), gaining access to a pre-configured `ExtensionManager`, `ExtensionDescription`, and helper methods like `id(String resource)` for namespaced resource identification.
 - **ExtensionRegistry** — a powerful registry system where extensions register resources (auth layers, hash methods) with **namespaced identities** (`extension_id:resource_name`).
 - **Plugin-based registration** — extensions are registered by plugins, not by extending framework classes. The plugin holds the extension, and the extension holds a registry.
 - **NamespacedIdentity** — every registered resource gets a unique namespaced ID, preventing collisions between extensions.

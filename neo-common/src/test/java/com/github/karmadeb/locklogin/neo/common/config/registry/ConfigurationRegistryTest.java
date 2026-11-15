@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -99,9 +98,9 @@ class ConfigurationRegistryTest {
 	@Test
 	void configure_createsFile_withDefaults() throws IOException {
 		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-defaults.yaml"));
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("name", "The display name for this configuration").string(v -> v.with(() -> "defaultName"));
 				writer.schema().with("port", "The server port", "Must be between 1024 and 65535").intNumber(v -> v.with(() -> 8080));
 			}
@@ -126,9 +125,9 @@ class ConfigurationRegistryTest {
 	@Test
 	void configure_createsNestedDirectory() throws IOException {
 		ConfigFile file = ConfigFile.absolute(tempDir.resolve("sub", "dir", "nested-dir.yaml"));
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("key", "A key in a nested directory file").string(v -> v.with(() -> "value"));
 			}
 		};
@@ -149,7 +148,7 @@ class ConfigurationRegistryTest {
 		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-section.yaml"));
 		ConfigPart part = new TestPart(ConfigPath.of("server", "network")) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("host", "The server hostname").string(v -> v.with(() -> "localhost"));
 				writer.schema().with("port", "The server port number").intNumber(v -> v.with(() -> 9090));
 			}
@@ -177,9 +176,9 @@ class ConfigurationRegistryTest {
 		Files.writeString(configPath, "name: 'existingName'\nport: 3000\n");
 
 		ConfigFile file = ConfigFile.absolute(configPath);
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				// Defaults should not overwrite existing values
 				writer.schema().with("name", "The configuration name").string(v -> v.with(() -> "defaultName"));
 				writer.schema().with("port", "The port number").intNumber(v -> v.with(() -> 8080));
@@ -206,9 +205,9 @@ class ConfigurationRegistryTest {
 		Files.writeString(configPath, "port: -1\n");
 
 		ConfigFile file = ConfigFile.absolute(configPath);
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("port", "Server listening port", "Must be a positive integer").intNumber(v -> {
 					v.with(() -> 8080);
 					v.validator(obj -> obj instanceof Integer && (Integer) obj > 0);
@@ -235,9 +234,9 @@ class ConfigurationRegistryTest {
 		Files.writeString(configPath, "port: 8085\n");
 
 		ConfigFile file = ConfigFile.absolute(configPath);
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("port", "Server listening port").intNumber(v -> {
 					v.with(() -> 8080);
 					v.validator(obj -> obj instanceof Integer && (Integer) obj > 0);
@@ -263,9 +262,9 @@ class ConfigurationRegistryTest {
 		Files.writeString(configPath, "cost: 12\n");
 
 		ConfigFile file = ConfigFile.absolute(configPath);
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("cost", "Resource cost", "Must be at least 10").intNumber(v -> {
 					v.required(10);
 					v.validator(obj -> obj instanceof Number n && n.intValue() >= 10);
@@ -289,7 +288,7 @@ class ConfigurationRegistryTest {
 
 		ConfigPart part1 = new TestPart(ConfigPath.of("plugin1")) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("enabled", "Whether plugin1 is enabled").bool(v -> v.with(() -> true)
 						.validator(val -> val instanceof Boolean));
 			}
@@ -297,7 +296,7 @@ class ConfigurationRegistryTest {
 
 		ConfigPart part2 = new TestPart(ConfigPath.of("plugin2")) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("name", "The display name for plugin2").string(v -> v.with(() -> "Plugin2"));
 			}
 		};
@@ -325,16 +324,16 @@ class ConfigurationRegistryTest {
 		ConfigFile file1 = ConfigFile.absolute(tempDir.resolve("test-multi-file1.yaml"));
 		ConfigFile file2 = ConfigFile.absolute(tempDir.resolve("test-multi-file2.yaml"));
 
-		ConfigPart part1 = new TestPart(ConfigPath.empty()) {
+		ConfigPart part1 = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("key1", "First configuration key").string(v -> v.with(() -> "value1"));
 			}
 		};
 
-		ConfigPart part2 = new TestPart(ConfigPath.empty()) {
+		ConfigPart part2 = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("key2", "Second configuration key").string(v -> v.with(() -> "value2"));
 			}
 		};
@@ -358,9 +357,9 @@ class ConfigurationRegistryTest {
 	@Test
 	void configure_withConstant_writesConstantValue() throws IOException {
 		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-constant.yaml"));
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("version", "Plugin version", "Do not modify this value").string(v -> v.constant("1.0.0"));
 			}
 		};
@@ -377,9 +376,9 @@ class ConfigurationRegistryTest {
 	@Test
 	void configure_withStringList() throws IOException {
 		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-list.yaml"));
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("tags", "List of tags for categorization").list(v -> v.with(() -> List.of("alpha", "beta", "gamma")));
 			}
 		};
@@ -399,7 +398,7 @@ class ConfigurationRegistryTest {
 		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-section-path.yaml"));
 		ConfigPart part = new TestPart(ConfigPath.of("database", "connection")) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("url", "Database connection URL").string(v -> v.with(() -> "jdbc:mysql://localhost:3306/db"));
 				writer.schema().with("timeout", "Connection timeout in seconds").intNumber(v -> v.with(() -> 30));
 			}
@@ -424,7 +423,7 @@ class ConfigurationRegistryTest {
 		// Top-level part with scalars, lists, and all numeric types
 		ConfigPart topPart = new TestPart(ConfigPath.empty()) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("appName", "The application display name").string(v1 -> v1.with(() -> "MyApp"));
 				writer.schema().with("version", "Application version", "Do not modify manually").string(v2 -> v2.constant("2.0.0"));
 				writer.schema().with("tags", "Application tags for categorization").list(v3 -> v3.with(() -> List.of("production", "web", "api")));
@@ -440,7 +439,7 @@ class ConfigurationRegistryTest {
 		// Server section (level 1 nesting)
 		ConfigPart serverPart = new TestPart(ConfigPath.of("server")) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("host", "Server hostname").string(v5 -> v5.with(() -> "0.0.0.0"));
 				writer.schema().with("port", "Server listening port", "Must be between 1024 and 65535").intNumber(v6 -> {
 					v6.with(() -> 8080);
@@ -454,7 +453,7 @@ class ConfigurationRegistryTest {
 		// Server -> network section (level 2 nesting)
 		ConfigPart networkPart = new TestPart(ConfigPath.of("server", "network")) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("interface", "Network interface name").string(v9 -> v9.with(() -> "eth0"));
 				writer.schema().with("timeout", "Connection timeout in milliseconds").intNumber(v10 -> v10.with(() -> 5000));
 				writer.schema().with("retries", "Number of retry attempts").intNumber(v11 -> v11.with(() -> 3));
@@ -464,7 +463,7 @@ class ConfigurationRegistryTest {
 		// Server -> network -> firewall section (level 3 nesting)
 		ConfigPart firewallPart = new TestPart(ConfigPath.of("server", "network", "firewall")) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("enabled", "Whether firewall is active").bool(v13 -> v13.with(() -> true));
 				writer.schema().with("defaultPolicy", "Default firewall policy").string(v14 -> v14.with(() -> "deny"));
 			}
@@ -473,7 +472,7 @@ class ConfigurationRegistryTest {
 		// Database section (level 1 nesting)
 		ConfigPart dbPart = new TestPart(ConfigPath.of("database")) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("driver", "JDBC driver class").string(v27 -> v27.with(() -> "com.mysql.cj.jdbc.Driver"));
 				writer.schema().with("url", "Database connection URL").string(v28 -> v28.with(() -> "jdbc:mysql://localhost:3306/mydb"));
 				writer.schema().with("username", "Database username").string(v29 -> v29.with(() -> "admin"));
@@ -484,7 +483,7 @@ class ConfigurationRegistryTest {
 		// Database -> pool section (level 2 nesting)
 		ConfigPart poolPart = new TestPart(ConfigPath.of("database", "pool")) {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("minSize", "Minimum pool size").intNumber(v32 -> v32.with(() -> 5));
 				writer.schema().with("maxSize", "Maximum pool size").intNumber(v33 -> v33.with(() -> 20));
 				writer.schema().with("idleTimeout", "Idle connection timeout in ms").longNumber(v34 -> v34.with(() -> 60000L));
@@ -567,9 +566,9 @@ class ConfigurationRegistryTest {
 		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-section-api.yaml"));
 
 		// Single part using the section() API for all nesting
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				// Top-level scalar
 				writer.schema().with("appName", "Application name").string(v -> v.with(() -> "SectionApp"));
 
@@ -721,9 +720,9 @@ class ConfigurationRegistryTest {
 	@Test
 	void configure_multipleRegenerations_noDuplicateBlankLines() throws IOException {
 		ConfigFile file = ConfigFile.absolute(tempDir.resolve("test-blank-lines.yaml"));
-		ConfigPart part = new TestPart(ConfigPath.empty()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				writer.schema().with("name", "Display name").string(v -> v.with(() -> "TestApp"));
 				writer.schema().with("port", "Server port").intNumber(v -> v.with(() -> 8080));
 				writer.schema().with("enabled", "Feature toggle").bool(v -> v.with(() -> true));
@@ -775,9 +774,9 @@ class ConfigurationRegistryTest {
 
 		ConfigFile file = ConfigFile.absolute(configPath);
 		// Part reads existing value via reader and writes a derived value
-		ConfigPart part = new TestPart(ConfigPath.empty(), new TestReader()) {
+		ConfigPart part = new TestPart() {
 			@Override
-			public void init(@NonNull ConfigWriter writer) {
+			public void init(@NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
 				// The reader is passed at construction — in real usage the registry
 				// creates the writer, but init() receives it
 				writer.schema().with("derived", "Value derived from existing configuration").string(v -> v.with(() -> "derived-from-config"));
@@ -796,15 +795,15 @@ class ConfigurationRegistryTest {
 	// --- Helper classes ---
 
 	private static class TestPart extends ConfigPart {
-		private final ConfigPath path;
 
-		TestPart(ConfigPath path) {
-			super(new TestReader());
-			this.path = path;
+		private final ConfigPath path;
+		protected ConfigReader reader;
+
+		TestPart() {
+			this.path = ConfigPath.empty();
 		}
 
-		TestPart(ConfigPath path, ConfigReader reader) {
-			super(reader);
+		TestPart(ConfigPath path) {
 			this.path = path;
 		}
 
@@ -814,35 +813,9 @@ class ConfigurationRegistryTest {
 		}
 
 		@Override
-		public void init(@NonNull ConfigWriter writer) {
+		public void init(final @NonNull ConfigReader reader, @NonNull ConfigWriter writer) {
+			this.reader = reader;
 			// Default: do nothing
 		}
-	}
-
-	private static class TestReader implements ConfigReader {
-		@Override
-		public Optional<String> getString(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public Optional<Byte> getByte(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public Optional<Short> getShort(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public Optional<Integer> getInt(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public Optional<Long> getLong(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public Optional<Float> getFloat(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public Optional<Double> getDouble(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public Optional<Boolean> getBool(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public Optional<? extends ConfigReader> getSection(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public Optional<? extends List<? extends ConfigReader>> getSections(@NonNull String key) { return Optional.empty(); }
-		@Override
-		public List<String> getStringList(@NonNull String key) { return List.of(); }
-		@Override
-		public boolean has(String key) { return false; }
 	}
 }

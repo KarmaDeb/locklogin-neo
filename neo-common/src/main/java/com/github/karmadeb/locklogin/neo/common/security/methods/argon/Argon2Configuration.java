@@ -10,9 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 public final class Argon2Configuration extends ConfigPart {
 
-	Argon2Configuration(final @NotNull ConfigReader reader) {
-		super(reader);
-	}
+	private ConfigReader reader;
 
 	/**
 	 * Get the part path. This is used internally
@@ -58,7 +56,9 @@ public final class Argon2Configuration extends ConfigPart {
 	}
 
 	@Override
-	public void init(final @NotNull ConfigWriter writer) {
+	public void init(final @NotNull ConfigReader reader, final @NotNull ConfigWriter writer) {
+		this.reader = reader;
+
 		writer.schema()
 				.with("parameter",
 						"Argon2 parameter spec. Valid options are:",

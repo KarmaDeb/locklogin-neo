@@ -9,7 +9,7 @@ import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer.H
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer.HookFailure;
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer.Result;
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthSession;
-import com.github.karmadeb.locklogin.neo.common.registry.NeoRegistry;
+import com.github.karmadeb.locklogin.neo.common.extension.NeoRegistry;
 import com.github.karmadeb.locklogin.neo.common.struct.SortedDuplexMap;
 import com.github.karmadeb.locklogin.neo.common.struct.SortedDuplexMap.Walker;
 import org.jetbrains.annotations.Contract;

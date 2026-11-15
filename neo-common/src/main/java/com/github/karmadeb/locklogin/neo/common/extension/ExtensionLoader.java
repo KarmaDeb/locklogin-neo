@@ -1,98 +1,118 @@
 package com.github.karmadeb.locklogin.neo.common.extension;
 
+import com.github.karmadeb.locklogin.neo.api.extension.Extension;
 import com.github.karmadeb.locklogin.neo.api.extension.ExtensionLifecycle;
+import com.github.karmadeb.locklogin.neo.api.extension.ExtensionManager;
 import com.github.karmadeb.locklogin.neo.api.extension.NeoExtension;
-import com.github.karmadeb.locklogin.neo.api.extension.description.ExtensionDescription;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
-// Final implementation? It's the most comfy way I've found
-// to actually do this, even though it still looks bad, I think it's
-// what most platforms do already, so I might be wrong doing this, but
-// also the entire world is
-public final class ExtensionLoader {
 
-	private final Map<String, ExtensionProxy> extensions = new ConcurrentHashMap<>();
+public final class ExtensionLoader implements ExtensionManager {
 
-	public NeoExtension load(final ExtensionLifecycle cycle,
-							 final NeoExtension extension,
-							 final ExtensionDescription description) {
-		String id = description.id();
-		if (this.extensions.containsKey(id)) {
-			return this.extensions.get(id);
-		}
+	private final Map<String, NeoExtension> extensions = new ConcurrentHashMap<>();
+	private final Map<Class<? extends Extension>, ExtensionProxy> proxies = new ConcurrentHashMap<>();
 
-		ExtensionProxy proxy = new ExtensionProxy(extension, description);
-		proxy.init(description);
-		proxy.loaded(cycle);
+	private static ExtensionLifecycle lifecycle = ExtensionLifecycle.PLUGIN_LOAD;
 
-		this.extensions.put(description.id(), proxy);
-		return proxy;
+	public static void setLifecycle(final ExtensionLifecycle cycle) {
+		lifecycle = cycle;
 	}
 
-	public void enable(final ExtensionLifecycle cycle, final NeoExtension extension) {
-		ExtensionDescription description = extension.description();
-		String id = description.id();
+	public static ExtensionLifecycle getLifecycle() {
+		return lifecycle;
+	}
 
-		if (!this.extensions.containsKey(id)) {
-			return;
+	/**
+	 * Tries to load an extension.
+	 *
+	 * @param extension the extension to load
+	 * @return the loaded extension
+	 */
+	@Override
+	public Extension load(final @NotNull Class<? extends NeoExtension> extension) {
+		ExtensionProxy proxy = this.proxies.get(extension);
+		if (proxy != null) {
+			return proxy.extension();
 		}
 
-		ExtensionProxy proxy = this.extensions.get(id);
-		if (proxy.isEnabled()) {
-			return;
+		proxy = new ExtensionProxy(extension);
+		proxy.init();
+
+		this.extensions.put(proxy.id(), proxy.extension());
+		this.proxies.put(extension, proxy);
+
+		proxy.loaded(lifecycle);
+
+		return proxy.extension();
+	}
+
+	/**
+	 * Enables an extension
+	 *
+	 * @param extension the extension to enable
+	 * @return if the extension was enabled
+	 */
+	@Override
+	public boolean enable(final @NotNull Extension extension) {
+		Class<? extends Extension> ext = extension.getClass();
+		ExtensionProxy proxy = this.proxies.get(ext);
+		if (proxy == null || proxy.isEnabled()) {
+			return false;
 		}
 
 		proxy.setEnabled(true);
-		proxy.enabled(cycle);
+		proxy.enabled(lifecycle);
+
+		return true;
 	}
 
-	public void disable(final ExtensionLifecycle cycle, final NeoExtension extension) {
-		ExtensionDescription description = extension.description();
-		String id = description.id();
-
-		if (!this.extensions.containsKey(id)) {
-			return;
-		}
-
-		ExtensionProxy proxy = this.extensions.get(id);
-		if (!proxy.isEnabled()) {
-			return;
+	/**
+	 * Disables an extension
+	 *
+	 * @param extension the extension to disable
+	 * @return if the extension was disabled
+	 */
+	@Override
+	public boolean disable(final @NotNull Extension extension) {
+		Class<? extends Extension> ext = extension.getClass();
+		ExtensionProxy proxy = this.proxies.get(ext);
+		if (proxy == null || !proxy.isEnabled()) {
+			return false;
 		}
 
 		proxy.setEnabled(false);
-		proxy.disabled(cycle);
+		proxy.disabled(lifecycle);
+
+		return true;
 	}
 
-	public Optional<ExtensionProxy> extension(final NeoExtension extension) {
-		return this.extension(extension.description());
-	}
-
-	public Optional<ExtensionProxy> extension(final ExtensionDescription description) {
-		return this.extension(description.id());
-	}
-
-	public Optional<ExtensionProxy> extension(final String id) {
+	/**
+	 * Get an extension by its ID
+	 *
+	 * @param id the extension ID
+	 * @return the extension
+	 */
+	@Override
+	public Optional<Extension> extension(final @NotNull String id) {
 		return Optional.ofNullable(this.extensions.get(id));
 	}
 
-	public Set<ExtensionProxy> proxies() {
-		return new HashSet<>(this.extensions.values());
-	}
-
-	public Set<NeoExtension> extensions() {
-		return this.extensions(_ -> true);
-	}
-
-	public Set<NeoExtension> extensions(final Predicate<NeoExtension> filter) {
-		return this.extensions
-				.values()
+	/**
+	 * Get all the registered extensions
+	 *
+	 * @param filter the extension filter
+	 * @return the extensions
+	 */
+	@Override @SuppressWarnings({"unchecked", "rawtypes"})
+	public @NotNull @Unmodifiable Collection<? extends Extension> extensions(final @NotNull Predicate<? extends Extension> filter) {
+		return this.extensions.values()
 				.stream()
-				.map(ExtensionProxy::extension)
-				.filter(filter)
-				.collect(Collectors.toSet());
+				.filter(ext -> ((Predicate) filter).test(ext))
+				.toList();
 	}
 }

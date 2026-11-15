@@ -8,7 +8,7 @@ import com.github.karmadeb.locklogin.neo.api.extension.registry.ExtensionRegistr
 import com.github.karmadeb.locklogin.neo.api.security.HashMethod;
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer;
 import com.github.karmadeb.locklogin.neo.common.extension.registry.type.ExtensionRegistrySet;
-import com.github.karmadeb.locklogin.neo.common.registry.NeoRegistry;
+import com.github.karmadeb.locklogin.neo.common.extension.NeoRegistry;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;

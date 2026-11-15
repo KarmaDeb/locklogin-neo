@@ -4,7 +4,7 @@ import com.github.karmadeb.locklogin.neo.api.Constants;
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.extension.registry.ExtensionRegistryType;
 import com.github.karmadeb.locklogin.neo.api.extension.registry.RegistryItem;
-import com.github.karmadeb.locklogin.neo.common.registry.NeoRegistry;
+import com.github.karmadeb.locklogin.neo.common.extension.NeoRegistry;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 

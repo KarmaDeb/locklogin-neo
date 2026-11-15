@@ -7,6 +7,7 @@ import com.github.karmadeb.locklogin.neo.api.extension.registry.ExtensionRegistr
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.annotation.*;
 import java.util.Objects;
 
 

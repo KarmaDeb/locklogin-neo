@@ -1,4 +1,4 @@
-package com.github.karmadeb.locklogin.neo.common.registry;
+package com.github.karmadeb.locklogin.neo.common.extension;
 
 
 import com.github.karmadeb.locklogin.neo.api.Constants;
@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class NeoRegistry implements ExtensionRegistry {
 
-	private static NeoRegistry registry;
+	private static final NeoRegistry registry = new NeoRegistry();
 
 	private final Set<NamespacedIdentity> registered = ConcurrentHashMap.newKeySet();
 	private final Map<Extension, NeoExtensionRegistry> registries = new ConcurrentHashMap<>();
@@ -29,13 +29,7 @@ public final class NeoRegistry implements ExtensionRegistry {
 	private final ExtensionRegistryType<AuthLayer<?>> layer = new PluginRegistrySet<>(this,
 			AuthLayer.class, Constants.RESOURCE_AUTH_LAYER);
 
-	private NeoRegistry() {
-		if (NeoRegistry.registry != null) {
-			return;
-		}
-
-		NeoRegistry.registry = this;
-	}
+	private NeoRegistry() {}
 
 	/**
 	 * Get the registry extension
@@ -111,10 +105,6 @@ public final class NeoRegistry implements ExtensionRegistry {
 	}
 
 	public static NeoRegistry registry() {
-		if (NeoRegistry.registry == null) {
-			return new NeoRegistry();
-		}
-
 		return NeoRegistry.registry;
 	}
 

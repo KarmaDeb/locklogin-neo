@@ -15,9 +15,5 @@ public enum ExtensionLifecycle {
 	/**
 	 * Lifecycle origin by manual operation
 	 */
-	MANUAL,
-	/**
-	 * Lifecycle origin by a problem
-	 */
-	PROBLEM
+	MANUAL
 }
