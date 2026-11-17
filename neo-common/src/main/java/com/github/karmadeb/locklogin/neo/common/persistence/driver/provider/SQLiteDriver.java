@@ -7,6 +7,8 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.jetbrains.annotations.NotNull;
 import org.sqlite.JDBC;
 
+import java.util.Objects;
+
 public final class SQLiteDriver extends GenericDriver {
 
 	public SQLiteDriver() {
@@ -16,6 +18,20 @@ public final class SQLiteDriver extends GenericDriver {
 	@Override
 	protected @NotNull HikariDataSource configure() {
 		return null;
+	}
+
+	/**
+	 * Formats a name depending on the driver. This
+	 * is useful for special tables/fields which are also
+	 * a reserved driver keyword.
+	 *
+	 * @param name   the name to format
+	 * @param target the format target
+	 * @return the formatted value
+	 */
+	@Override
+	public @NotNull String format(final @NotNull String name, final @NotNull FormatTarget target) {
+		return "";
 	}
 
 	/**

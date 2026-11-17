@@ -19,6 +19,20 @@ public final class MySQLDriver extends GenericDriver {
 	}
 
 	/**
+	 * Formats a name depending on the driver. This
+	 * is useful for special tables/fields which are also
+	 * a reserved driver keyword.
+	 *
+	 * @param name   the name to format
+	 * @param target the format target
+	 * @return the formatted value
+	 */
+	@Override
+	public @NotNull String format(final @NotNull String name, final @NotNull FormatTarget target) {
+		return "";
+	}
+
+	/**
 	 * Migrate to a different driver from the
 	 * current one. Custom driver implementations should
 	 * always add support for this -> default SQL drivers

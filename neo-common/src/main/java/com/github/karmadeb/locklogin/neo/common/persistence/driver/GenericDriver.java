@@ -1,17 +1,24 @@
 package com.github.karmadeb.locklogin.neo.common.persistence.driver;
 
 import com.github.karmadeb.locklogin.neo.api.Constants;
-import com.github.karmadeb.locklogin.neo.api.SneakyFunction;
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
+import com.github.karmadeb.locklogin.neo.api.persistence.driver.PersistenceDriver;
 import com.github.karmadeb.locklogin.neo.api.persistence.driver.ResultSetDriver;
+import com.github.karmadeb.locklogin.neo.api.persistence.exception.UnsupportedDriverException;
+import com.github.karmadeb.locklogin.neo.common.orm.Tables;
+import com.github.karmadeb.locklogin.neo.common.orm.tables.records.UsersRecord;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jooq.DSLContext;
+import org.jooq.Result;
+import org.jooq.conf.Settings;
+import org.jooq.conf.WriteIfReadonly;
+import org.jooq.impl.DSL;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,7 +30,7 @@ public abstract class GenericDriver implements ResultSetDriver {
 
 	protected final Class<?> driver;
 	protected final NamespacedIdentity id;
-	private final AtomicReference<CompletableFuture<DataSource>> connectTaskRef = new AtomicReference<>();
+	private final AtomicReference<CompletableFuture<HikariDataSource>> connectTaskRef = new AtomicReference<>();
 	private final AtomicReference<CompletableFuture<Void>> closeTaskRef = new AtomicReference<>();
 
 	protected HikariDataSource dataSource;
@@ -60,17 +67,17 @@ public abstract class GenericDriver implements ResultSetDriver {
 	 * @return the database data source
 	 */
 	@Override
-	public final @NotNull CompletableFuture<DataSource> connect() {
+	public final @NotNull CompletableFuture<HikariDataSource> connect() {
 		if (this.dataSource != null && !this.dataSource.isClosed()) {
 			return CompletableFuture.completedFuture(this.dataSource);
 		}
 
-		CompletableFuture<DataSource> existing = connectTaskRef.get();
+		CompletableFuture<HikariDataSource> existing = connectTaskRef.get();
 		if (existing != null && !existing.isCompletedExceptionally() && !existing.isCancelled()) {
 			return existing;
 		}
 
-		CompletableFuture<DataSource> newTask = new CompletableFuture<>();
+		CompletableFuture<HikariDataSource> newTask = new CompletableFuture<>();
 		while (true) {
 			existing = connectTaskRef.get();
 
@@ -145,32 +152,74 @@ public abstract class GenericDriver implements ResultSetDriver {
 		}
 	}
 
-	/**
-	 * Execute a query
-	 *
-	 * @param function the function to execute
-	 * @return the query result task
-	 */
-	@Override
-	public @NotNull CompletableFuture<ResultSet> query(final @NotNull SneakyFunction<Connection, ResultSet> function) {
-		if (!this.connected()) {
-			return CompletableFuture.failedFuture(new SQLException("DataSource not connected"));
-		}
-
-		CompletableFuture<ResultSet> task = new CompletableFuture<>();
-
-		SQL_ASYNC_EXECUTOR.submit(() -> {
-			try(Connection connection = this.dataSource.getConnection()) {
-				ResultSet rs = function.apply(connection);
-				task.complete(rs);
-			} catch (Throwable ex) {
-				task.completeExceptionally(ex);
-			}
-		});
-
-		return task;
-	}
-
 	@NotNull
 	protected abstract HikariDataSource configure();
+
+	/**
+	 * Migrate to a different driver from the
+	 * current one. Custom driver implementations should
+	 * always add support for this -> default SQL drivers
+	 *
+	 * @param driver the driver to migrate to
+	 * @throws UnsupportedDriverException if the driver is not supported
+	 */
+	@Override
+	public void migrateTo(final @NotNull PersistenceDriver<?, ?> driver) throws UnsupportedDriverException {
+		boolean epimeralThis = !this.connected();
+		boolean epimeralOther = !driver.connected();
+
+		Objects.requireNonNull(driver);
+
+		DataSource fromSource = this.connect().join();
+		DataSource toSource = driver.connect().join();
+
+		try {
+			try (Connection from = fromSource.getConnection(); Connection to = toSource.getConnection()) {
+				DSLContext dslFrom = DSL.using(from, new Settings()
+						.withReadonlyInsert(WriteIfReadonly.IGNORE)
+						.withReadonlyTableRecordInsert(WriteIfReadonly.IGNORE)
+						.withReadonlyUpdatableRecordUpdate(WriteIfReadonly.IGNORE)
+						.withReadonlyUpdate(WriteIfReadonly.IGNORE));
+				DSLContext dslTo = DSL.using(to);
+
+				var _ = dslTo.createTableIfNotExists(Tables.USERS);
+				if (!dslFrom.fetchExists(Tables.USERS)) {
+					return;
+				}
+
+				int pageSize = 500;
+				long lastId = 0;
+
+				while (true) {
+					Result<UsersRecord> result = dslFrom.selectFrom(Tables.USERS)
+							.where(Tables.USERS.ID.greaterThan(lastId))
+							.orderBy(Tables.USERS.ID)
+							.limit(pageSize)
+							.fetch();
+
+					if (result.isEmpty()) {
+						break;
+					}
+
+					dslTo.insertInto(Tables.USERS).set(result).executeLarge();
+				}
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException(ex);
+		} finally {
+			if (epimeralThis) {
+				tryClose(this);
+			}
+
+			if (epimeralOther) {
+				tryClose(driver);
+			}
+		}
+	}
+
+	private static void tryClose(final PersistenceDriver<?, ?> driver) {
+		try {
+			 driver.disconnect().join();
+		} catch (Throwable _) {}
+	}
 }
