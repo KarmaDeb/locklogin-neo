@@ -45,7 +45,13 @@ The project is split into five Gradle modules, each with a distinct responsibili
 
 ## LockLogin Essentials
 
-LockLogin Essentials is a subset of extensions that are provided and built directly into the LockLogin codebase. Unlike third-party extensions, these are loaded using the LockLogin plugin itself — they are recognized as extensions during the plugin's own lifecycle rather than being discovered externally. Most of them can be disabled by other extensions by using the `EssentialFeatures#disable` method, allowing other extensions to replace or override the built-in functionality when needed.
+LockLogin Essentials is a subset of extensions that are provided and built directly into the LockLogin codebase. Their source code lives inside the project and they are loaded by LockLogin during its own startup lifecycle. In LockLogin Neo, extensions are not discovered — they are **registered** by a plugin through the extension API:
+
+```java
+LockLogin.get().extensions().load(new MyExtension(...));
+```
+
+Essential extensions are registered this way by the LockLogin plugin itself. Most of them can be disabled by other extensions by using the `EssentialFeatures#disable` method. Disabling an essential feature does not remove the extension or its API — it simply tells LockLogin not to load the extension class. The API remains available for any other extension that requires it, which is why they are called **essentials**: they are essential for the plugin extension environment.
 
 | Extension | Description |
 |---|---|

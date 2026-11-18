@@ -1,6 +1,6 @@
 # neo-extensions-jooq
 
-**neo-extensions-jooq** is part of the **neo-essentials** extension set — a collection of official extensions packed with LockLogin that are extracted during plugin startup and are required for the plugin to work properly. It provides official database persistence support through [JOOQ](https://www.jooq.org/) (Java Object Oriented Querying) and serves as the built-in method for handling multiple SQL database engines.
+**neo-extensions-jooq** is part of the **neo-essentials** extension set — a collection of official extensions whose source code lives inside the LockLogin codebase and are required for the plugin extension environment to function properly. It provides official database persistence support through [JOOQ](https://www.jooq.org/) (Java Object Oriented Querying) and serves as the built-in method for handling multiple SQL database engines.
 
 Beyond its role as a built-in extension, **this module is also intended to serve as a reference implementation** — a practical, real-world example of how to structure a LockLogin extension that handles configuration, lifecycle management, dependency injection, and platform integration.
 
@@ -10,21 +10,25 @@ Beyond its role as a built-in extension, **this module is also intended to serve
 
 Before explaining what the JOOQ extension does, it's important to understand the concept behind "neo-essentials."
 
-Neo-essentials is a set of official extensions that ship with LockLogin. They are not third-party add-ons discovered from disk — they live inside the LockLogin codebase itself and are loaded by LockLogin during its own startup lifecycle. Think of them as "built-in features" that happen to be implemented as extensions.
+Neo-essentials is a set of official extensions whose code always lives inside the LockLogin codebase. They are not third-party add-ons — they are loaded by LockLogin during its own startup lifecycle. Think of them as "built-in features" that happen to be implemented as extensions.
+
+They are called **essentials** because they are essential for the plugin extension environment itself. Even if a server owner disables an essential feature, the extension's API remains available so that other extensions depending on it can still function.
 
 ### Why are they replaceable?
 
-The essentials system is designed so that no built-in feature is permanent. If a server owner installs a third-party extension that provides the same functionality in a different way, that extension can tell LockLogin to skip loading the corresponding essential. For example:
+The essentials system is designed so that no built-in feature is permanent. Disabling an essential feature does not remove the extension or its API — it simply tells LockLogin **not to load the extension class**. The API remains available for any other extension that requires it.
+
+For example, if a server owner installs a third-party extension that provides its own persistence layer, that extension can tell LockLogin to skip loading the built-in JOOQ extension during the `loaded` lifecycle phase:
 
 ```java
 EssentialFeatures.disable(EssentialFeatures.FEATURE_JOOQ);
 ```
 
-This means a custom persistence extension can fully replace the built-in JOOQ extension without any conflict. The essentials loader will simply skip JOOQ and let the third-party extension take over.
+This call should be performed during the `loaded` lifecycle phase, before the essential extension class is instantiated. The JOOQ extension's API and classes remain on the classpath — LockLogin simply skips the loading step. This means a custom persistence extension can fully replace the built-in JOOQ behavior without any conflict, while other extensions that depend on the JOOQ API can still access it if needed.
 
 ### Where do essential extensions live?
 
-All essential extensions are compiled into the LockLogin plugin JAR. During startup, LockLogin extracts them and treats them as regular extensions — they go through the same lifecycle phases, register the same services, and follow the same conventions as any third-party extension.
+All essential extensions live inside the LockLogin codebase. Their source code is part of the project, and they are loaded by LockLogin itself during startup — they go through the same lifecycle phases, register the same services, and follow the same conventions as any third-party extension.
 
 ---
 
