@@ -127,6 +127,23 @@ public final class ConfigurationRegistry extends ConfigRegistry {
 		).toArray(new ConfigPart[0]);
 	}
 
+	/**
+	 * Get a part of a configuration file
+	 *
+	 * @param file the file
+	 * @param part the file part
+	 * @return the configuration file part
+	 */
+	@Override
+	public @NotNull <T extends ConfigPart> Optional<T> part(final @NotNull ConfigFile file, final @NotNull Class<T> part) {
+		Set<ConfigPart> p = this.configurations.get(file);
+		if (p == null || p.isEmpty()) {
+			return Optional.empty();
+		}
+
+		return p.stream().filter(part::isInstance).map(part::cast).findAny();
+	}
+
 	public CompletableFuture<Void> configure() {
 		List<CompletableFuture<Void>> tasks = new ArrayList<>();
 

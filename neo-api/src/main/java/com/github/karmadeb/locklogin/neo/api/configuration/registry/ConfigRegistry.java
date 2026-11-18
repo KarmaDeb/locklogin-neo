@@ -3,6 +3,8 @@ package com.github.karmadeb.locklogin.neo.api.configuration.registry;
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPart;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Optional;
+
 /**
  * The config registry holds all the configuration
  * files and {@link ConfigPart} registered through
@@ -23,4 +25,14 @@ public abstract class ConfigRegistry {
 	 * @return the parts
 	 */
 	public abstract ConfigPart @NotNull[] parts(final @NotNull ConfigFile file);
+
+	/**
+	 * Get a part of a configuration file
+	 * @param file the file
+	 * @param part the file part
+	 * @return the configuration file part
+	 * @param <T> the part type
+	 */
+	@NotNull
+	public abstract <T extends ConfigPart> Optional<T> part(final @NotNull ConfigFile file, final @NotNull Class<T> part);
 }

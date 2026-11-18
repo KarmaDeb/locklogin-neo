@@ -13,14 +13,14 @@ import java.util.Objects;
  */
 public abstract class PersistenceManager<T> {
 
-	protected final PersistenceDriver<?, ?> driver;
+	protected final PersistenceDriver driver;
 
 	/**
 	 * Create a new persistence manager
 	 * @param driver the driver
 	 */
 	@Contract("null -> fail")
-	public PersistenceManager(final PersistenceDriver<?, ?> driver) {
+	public PersistenceManager(final PersistenceDriver driver) {
 		this.driver = Objects.requireNonNull(driver);
 	}
 
@@ -29,7 +29,7 @@ public abstract class PersistenceManager<T> {
 	 * @return the driver
 	 */
 	@NotNull
-	public PersistenceDriver<?, ?> driver() {
+	public PersistenceDriver driver() {
 		return this.driver;
 	}
 

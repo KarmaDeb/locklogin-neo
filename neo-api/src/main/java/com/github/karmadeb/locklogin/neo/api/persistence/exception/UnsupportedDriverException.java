@@ -17,7 +17,7 @@ public class UnsupportedDriverException extends RuntimeException {
 	 * @param driver the driver
 	 */
 	@Contract("null -> fail")
-	public UnsupportedDriverException(final PersistenceDriver<?, ?> driver) {
+	public UnsupportedDriverException(final PersistenceDriver driver) {
 		Objects.requireNonNull(driver);
 		super(String.format("Failed to execute migrate operation for driver %s (%s)",
 				driver.name(), driver.provider().getCanonicalName()));

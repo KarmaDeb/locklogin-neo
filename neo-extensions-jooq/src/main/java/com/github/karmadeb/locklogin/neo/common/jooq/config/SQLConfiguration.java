@@ -1,4 +1,4 @@
-package com.github.karmadeb.locklogin.neo.common.config.plugin.sql;
+package com.github.karmadeb.locklogin.neo.common.jooq.config;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigReader;
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigWriter;
@@ -8,9 +8,13 @@ import com.github.karmadeb.locklogin.neo.api.configuration.schema.SchemaWriter;
 import org.apache.commons.validator.routines.DomainValidator;
 import org.apache.commons.validator.routines.InetAddressValidator;
 import org.jetbrains.annotations.NotNull;
+import org.jooq.SQLDialect;
+
+import java.util.Arrays;
 
 public final class SQLConfiguration extends ConfigPart {
 
+	public static final String DEFAULT_DRIVER = "sqlite";
 	public static final String DEFAULT_HOST = "127.0.0.1";
 	public static final int DEFAULT_PORT = 3306;
 	public static final String DEFAULT_DATABASE = "locklogin";
@@ -41,6 +45,10 @@ public final class SQLConfiguration extends ConfigPart {
 	@Override
 	public ConfigPath path() {
 		return ConfigPath.of("persistence");
+	}
+
+	public SQLDialect dialect() {
+		return SQLDialect.valueOf(this.reader.getString("dialect").orElse(DEFAULT_DRIVER).toUpperCase());
 	}
 
 	public String host() {
@@ -111,7 +119,18 @@ public final class SQLConfiguration extends ConfigPart {
 	public void init(final @NotNull ConfigReader reader, final @NotNull ConfigWriter writer) {
 		this.reader = reader;
 
-		writer.schema().with("host",
+		writer.schema().with("dialect", """
+			The database driver to use. Currently only supported drivers are:
+			- sqlite
+			- mariadb
+			- mysql
+			- postgres
+			Although many others might be supported by the use of extensions
+		""").string(config ->
+				config.required(DEFAULT_DRIVER).validator(raw -> raw instanceof String s &&
+						Arrays.stream(SQLDialect.values()).map(d -> d.name().toLowerCase())
+								.anyMatch(n -> n.equalsIgnoreCase(s.toLowerCase())))
+		).with("host",
 				"The database host.",
 				"This value is completely ignored by but might",
 				"not limit to SQLite driver.",

@@ -1,12 +1,13 @@
 package com.github.karmadeb.locklogin.neo.common.user;
 
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
+import com.github.karmadeb.locklogin.neo.api.persistence.driver.PersistenceDriver;
 import com.github.karmadeb.locklogin.neo.api.persistence.driver.PersistenceDriver.FormatTarget;
-import com.github.karmadeb.locklogin.neo.api.persistence.driver.ResultSetDriver;
 import com.github.karmadeb.locklogin.neo.api.user.account.Account;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.ApiStatus.ScheduledForRemoval;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,11 +20,16 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Scheduled for removal as this will be moved along the user manager
+ * to the jooq extension
+ */
+@ScheduledForRemoval
 public abstract class NeoUserAccount implements Account {
 
 	private static final Gson gson = new GsonBuilder().create();
 
-	protected final ResultSetDriver driver;
+	protected final PersistenceDriver driver;
 	protected final Map<NamespacedIdentity, String> secrets = new ConcurrentHashMap<>();
 	protected UUID uuid;
 	protected String username;
@@ -36,7 +42,7 @@ public abstract class NeoUserAccount implements Account {
 	private final DirtyUserAccount dirty = new DirtyUserAccount();
 
 	@Contract("null -> fail")
-	public NeoUserAccount(final ResultSetDriver driver) {
+	public NeoUserAccount(final PersistenceDriver driver) {
 		this.driver = Objects.requireNonNull(driver);
 	}
 
@@ -238,57 +244,59 @@ public abstract class NeoUserAccount implements Account {
 	 */
 	@Override
 	public @NotNull CompletableFuture<Void> save() {
-		UUID uuid = this.uuid();
-		String username = this.username();
-		LocalDateTime lastSeen = this.lastSeenAt();
-		LocalDateTime firstSeen = this.firstSeenAt();
+//		UUID uuid = this.uuid();
+//		String username = this.username();
+//		LocalDateTime lastSeen = this.lastSeenAt();
+//		LocalDateTime firstSeen = this.firstSeenAt();
+//
+//		Objects.requireNonNull(uuid, "Cannot save account with null UUID");
+//		Objects.requireNonNull(username, "Cannot save account with null username");
+//		Objects.requireNonNull(lastSeen, "Cannot save account with null lastSeenAt");
+//		Objects.requireNonNull(firstSeen, "Cannot save account with null firstSeenAt");
+//
+//		String[] fields = this.dirty.fields();
+//		if (fields.length == 0) {
+//			return CompletableFuture.completedFuture(null);
+//		}
+//
+//		String tableName = this.driver.format("users", FormatTarget.TABLE_NAME);
+//		String[] fieldNames = Arrays.stream(fields)
+//				.map(name -> driver.format(name, FormatTarget.FIELD_NAME))
+//				.toArray(String[]::new);
+//
+//		if (isNewRecord) {
+//			String query = String.format("INSERT INTO %s (%s) VALUES (%s)",
+//					tableName,
+//					String.join(", ", fieldNames),
+//					new StringBuilder().repeat('?', fieldNames.length));
+//
+//			return this.driver.execute(connection -> {
+//				try (PreparedStatement statement = connection.prepareStatement(query)) {
+//					mapToStatement(statement, fields);
+//					statement.execute();
+//
+//					this.dirty.apply(this);
+//				}
+//			});
+//		}
+//
+//		String query = String.format("UPDATE %s SET %s = ? WHERE uuid = ?",
+//				tableName,
+//				String.join(", = ?", fieldNames)
+//		);
+//
+//		return this.driver.execute(connection -> {
+//			try (PreparedStatement statement = connection.prepareStatement(query)) {
+//				mapToStatement(statement, fields);
+//
+//				statement.setString(fields.length + 1, this.uuid.toString());
+//				statement.executeUpdate();
+//
+//				this.dirty.apply(this);
+//			}
+//		});
 
-		Objects.requireNonNull(uuid, "Cannot save account with null UUID");
-		Objects.requireNonNull(username, "Cannot save account with null username");
-		Objects.requireNonNull(lastSeen, "Cannot save account with null lastSeenAt");
-		Objects.requireNonNull(firstSeen, "Cannot save account with null firstSeenAt");
-
-		String[] fields = this.dirty.fields();
-		if (fields.length == 0) {
-			return CompletableFuture.completedFuture(null);
-		}
-
-		String tableName = this.driver.format("users", FormatTarget.TABLE_NAME);
-		String[] fieldNames = Arrays.stream(fields)
-				.map(name -> driver.format(name, FormatTarget.FIELD_NAME))
-				.toArray(String[]::new);
-
-		if (isNewRecord) {
-			String query = String.format("INSERT INTO %s (%s) VALUES (%s)",
-					tableName,
-					String.join(", ", fieldNames),
-					new StringBuilder().repeat('?', fieldNames.length));
-
-			return this.driver.execute(connection -> {
-				try (PreparedStatement statement = connection.prepareStatement(query)) {
-					mapToStatement(statement, fields);
-					statement.execute();
-
-					this.dirty.apply(this);
-				}
-			});
-		}
-
-		String query = String.format("UPDATE %s SET %s = ? WHERE uuid = ?",
-				tableName,
-				String.join(", = ?", fieldNames)
-		);
-
-		return this.driver.execute(connection -> {
-			try (PreparedStatement statement = connection.prepareStatement(query)) {
-				mapToStatement(statement, fields);
-
-				statement.setString(fields.length + 1, this.uuid.toString());
-				statement.executeUpdate();
-
-				this.dirty.apply(this);
-			}
-		});
+		return CompletableFuture.completedFuture(null);
 	}
 
 	private void mapToStatement(final PreparedStatement statement, final String[] fields) throws SQLException {

@@ -14,9 +14,8 @@ import java.util.concurrent.CompletableFuture;
  * - MariaDB
  * - MySQL
  * - SQLite
- * @param <T> the persistence driver connection kind
  */
-public interface PersistenceDriver<C, T> extends RegistryItem {
+public interface PersistenceDriver extends RegistryItem {
 
 	enum FormatTarget {
 		/**
@@ -73,7 +72,7 @@ public interface PersistenceDriver<C, T> extends RegistryItem {
 	 * @param driver the driver to migrate from
 	 * @throws UnsupportedDriverException if the driver is not supported
 	 */
-	default void migrateFrom(final @NotNull PersistenceDriver<?, ?> driver) throws UnsupportedDriverException {
+	default void migrateFrom(final @NotNull PersistenceDriver driver) throws UnsupportedDriverException {
 		throw new UnsupportedDriverException(driver);
 	}
 
@@ -84,5 +83,5 @@ public interface PersistenceDriver<C, T> extends RegistryItem {
 	 * @param driver the driver to migrate to
 	 * @throws UnsupportedDriverException if the driver is not supported
 	 */
-	void migrateTo(final @NotNull PersistenceDriver<?, ?> driver) throws UnsupportedDriverException;
+	void migrateTo(final @NotNull PersistenceDriver driver) throws UnsupportedDriverException;
 }

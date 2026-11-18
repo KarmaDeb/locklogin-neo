@@ -1,30 +1,56 @@
-package com.github.karmadeb.locklogin.neo.common.persistence.driver;
+package com.github.karmadeb.locklogin.neo.common.jooq.persistence.driver;
 
 import com.github.karmadeb.locklogin.neo.api.Constants;
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.persistence.driver.PersistenceDriver;
-import com.github.karmadeb.locklogin.neo.api.persistence.driver.ResultSetDriver;
 import com.github.karmadeb.locklogin.neo.api.persistence.exception.UnsupportedDriverException;
-import com.github.karmadeb.locklogin.neo.common.orm.Tables;
-import com.github.karmadeb.locklogin.neo.common.orm.tables.records.UsersRecord;
+import com.github.karmadeb.locklogin.neo.common.jooq.orm.Tables;
+import com.github.karmadeb.locklogin.neo.common.jooq.orm.tables.records.UsersRecord;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.Result;
+import org.jooq.SQLDialect;
 import org.jooq.conf.Settings;
 import org.jooq.conf.WriteIfReadonly;
 import org.jooq.impl.DSL;
 
 import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
-public abstract class GenericDriver implements ResultSetDriver {
+/**
+ * The JOOQ driver is the official LockLogin method to deal
+ * with multiple database engines in a very easy way; dealing
+ * the query building to a third-party library.
+ * This comes with its own caveats such as limiting the official
+ * dialects to the one the library supports, and according to the
+ * JOOQ community license:
+ * <ul>
+ * 		<li>
+ * 	    	It is governed under the terms of the Apache Software License 2.0 (ASL 2.0).
+ * 		</li>
+ *  	<li>
+ *      	Free usage is intended and officially supported exclusively for open-source
+ *   		database engines (such as MySQL, PostgreSQL, MariaDB, SQLite, H2, etc.).
+ *   	</li>
+ *  	<li>
+ *      	The use of commercial databases (such as Oracle, SQL Server, DB2, etc.) or
+ *   		advanced commercial-only features requires a paid commercial license.
+ *   	</li>
+ *  	<li>
+ *      	Redistributions and derivative works must retain the original copyright notices,
+ *   		conditions, and a copy of the Apache 2.0 license.
+ *   	</li>
+ * </ul>
+ */
+public abstract class JooQDriver implements PersistenceDriver {
 
 	protected static final ExecutorService SQL_ASYNC_EXECUTOR = Executors.newWorkStealingPool();
 
@@ -35,10 +61,15 @@ public abstract class GenericDriver implements ResultSetDriver {
 
 	protected HikariDataSource dataSource;
 
+	/**
+	 * Creates a new JOOQ driver
+	 * @param driver the driver class
+	 * @param dialect the driver dialect
+	 */
 	@Contract("null, _ -> fail; _, null -> fail")
-	public GenericDriver(final Class<?> driver, final String resource) {
-		this.driver = driver;
-		this.id = NamespacedIdentity.create(Constants.LOCKLOGIN_EXTENSION_ID, resource);
+	public JooQDriver(final Class<?> driver, final SQLDialect dialect) {
+		this.driver = Objects.requireNonNull(driver);
+		this.id = NamespacedIdentity.create(Constants.LOCKLOGIN_EXTENSION_ID, Objects.requireNonNull(dialect).name());
 	}
 
 	/**
@@ -164,7 +195,7 @@ public abstract class GenericDriver implements ResultSetDriver {
 	 * @throws UnsupportedDriverException if the driver is not supported
 	 */
 	@Override
-	public void migrateTo(final @NotNull PersistenceDriver<?, ?> driver) throws UnsupportedDriverException {
+	public void migrateTo(final @NotNull PersistenceDriver driver) throws UnsupportedDriverException {
 		boolean epimeralThis = !this.connected();
 		boolean epimeralOther = !driver.connected();
 
@@ -217,9 +248,9 @@ public abstract class GenericDriver implements ResultSetDriver {
 		}
 	}
 
-	private static void tryClose(final PersistenceDriver<?, ?> driver) {
+	private static void tryClose(final PersistenceDriver driver) {
 		try {
-			 driver.disconnect().join();
+			driver.disconnect().join();
 		} catch (Throwable _) {}
 	}
 }

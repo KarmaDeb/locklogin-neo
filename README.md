@@ -22,23 +22,34 @@ But this doesn't mean features are disappearing forever. Most of them will event
 
 ## Project History
 
-LockLogin Neo is the culmination of three generations of development:
+LockLogin Neo is the culmination of four generations of development:
 
 | Generation | Project | Status | Description |
 |---|---|---|---|
+| **0th** | **LockLoginLegacy** | Original version (archived) | The very first version of LockLogin — a simple authentication plugin that predates the official API and modular architecture. It had no extension system, no API, and no modularity. It was the most basic version of LockLogin, and LockLogin Neo aims to replicate its simplicity while adding the advantages of extensions, API, and modularity. |
 | **1st** | **LockLoginReborn** | Last released version | The original plugin with a monolithic module system built around an abstract `PluginModule` class. Modules were loaded via JAR files with license key validation, used a card-based queue system for async tasks, and relied heavily on reflection for event handling. Source available in `in-memory-of/LockLoginReborn/`. |
 | **2nd** | **LockLogin2** | Abandoned refactor | An intermediate attempt to modernize the codebase. Introduced a clean `Module` interface with lifecycle methods (`onLoad`, `onEnable`, `onDisable`), a `PluginModule<T>` generic interface for plugin-registered modules, a static `CurrentPlugin` singleton for lazy API access, and a `ModuleManager` for event and command registration. Source available in `in-memory-of/LockLogin2/`. |
 | **3rd** | **LockLogin Neo** | Active development (WIP) | The current project — a complete rewrite that takes the best ideas from both predecessors and reimagines them. Replaces the module system with a powerful extension system, introduces namespaced resource identities, a registry-based architecture, and platform-agnostic abstractions. A PaperMC-compatible version may be closer than it seems. |
 
 ## Architecture
 
-The project is split into three Gradle modules, each with a distinct responsibility:
+The project is split into five Gradle modules, each with a distinct responsibility:
 
 | Module | Description |
 |---|---|
 | **neo-api** | The core API — defines the contracts for extensions, configuration, messaging, security, and authentication layers. This is the foundation everything else builds on. |
 | **neo-api-bridge** | A platform-agnostic bridge layer that provides abstractions for player interaction, protocol messaging (titles, action bars), and positioning. It offers a centralized way to interact with players regardless of the underlying server platform. |
+| **neo-api-bukkit** | The Bukkit/Spigot platform adapter — implements the bridge abstractions for Bukkit-based servers, providing concrete implementations for player interaction, protocol messaging, and positioning specific to the Bukkit platform. |
 | **neo-common** | Shared implementations and utilities — configuration readers/writers, network buffer handling, and common helpers used across the project. |
+| **neo-extensions-jooq** | The JOOQ extension module — provides database integration using JOOQ (Java Object Oriented Querying) for type-safe SQL queries and database operations. |
+
+## LockLogin Essentials
+
+LockLogin Essentials is a subset of extensions that are provided and built directly into the LockLogin codebase. Unlike third-party extensions, these are loaded using the LockLogin plugin itself — they are recognized as extensions during the plugin's own lifecycle rather than being discovered externally. Most of them can be disabled by other extensions by using the `EssentialFeatures#disable` method, allowing other extensions to replace or override the built-in functionality when needed.
+
+| Extension | Description |
+|---|---|
+| **neo-essentials-jooq** | Provides official database persistence support through JOOQ for multiple SQL dialects (MySQL, MariaDB, PostgreSQL, SQLite). See [neo-extensions-jooq/README.md](neo-extensions-jooq/README.md) for details. |
 
 ## API Evolution
 

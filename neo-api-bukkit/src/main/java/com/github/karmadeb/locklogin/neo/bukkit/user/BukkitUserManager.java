@@ -1,6 +1,6 @@
 package com.github.karmadeb.locklogin.neo.bukkit.user;
 
-import com.github.karmadeb.locklogin.neo.api.persistence.driver.ResultSetDriver;
+import com.github.karmadeb.locklogin.neo.api.persistence.driver.PersistenceDriver;
 import com.github.karmadeb.locklogin.neo.api.user.CacheAccountManager;
 import com.github.karmadeb.locklogin.neo.api.user.UserManager;
 import com.github.karmadeb.locklogin.neo.api.user.account.Account;
@@ -20,15 +20,12 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class BukkitUserManager implements UserManager<Player> {
 
-	private final ResultSetDriver driver;
-
 	/**
 	 * Creates a new bukkit user manager
 	 * @param driver the underlying driver
 	 */
 	@Contract("null -> fail")
-	public BukkitUserManager(final ResultSetDriver driver) {
-		this.driver = Objects.requireNonNull(driver);
+	public BukkitUserManager(final PersistenceDriver driver) {
 	}
 
 	/**

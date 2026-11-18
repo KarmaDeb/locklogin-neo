@@ -1,8 +1,5 @@
-import nu.studer.gradle.jooq.JooqEdition
-
 plugins {
     id 'java'
-    id('nu.studer.jooq') version '10.2.1'
 }
 
 group = 'com.github.karmadeb'
@@ -17,59 +14,14 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    implementation("org.jooq:jooq:3.21.9")
-
     compileOnly("com.google.code.gson:gson:2.15.0")
-    compileOnly("commons-validator:commons-validator:1.11.0")
 
     compileOnly("org.bouncycastle:bcprov-jdk18on:1.87")
     compileOnly("org.yaml:snakeyaml:2.7")
-    compileOnly("com.zaxxer:HikariCP:7.1.0")
-    compileOnly("com.mysql:mysql-connector-j:26.10.0")
-    compileOnly("org.mariadb.jdbc:mariadb-java-client:4.0.0")
-    compileOnly("org.xerial:sqlite-jdbc:3.54.1.0")
-    compileOnly("org.postgresql:postgresql:42.7.14")
 
     testImplementation("org.yaml:snakeyaml:2.7")
-
-    // Special definitions
-    jooqGenerator("org.postgresql:postgresql:42.7.14")
 }
 
 test {
     useJUnitPlatform()
-}
-
-jooq {
-    version = '3.21.9'
-    edition = JooqEdition.OSS
-
-    configurations {
-        main {
-            generationTool {
-                logging = org.jooq.meta.jaxb.Logging.WARN
-
-                jdbc {
-                    driver = 'org.postgresql.Driver'
-                    url = 'jdbc:postgresql://localhost:5432/postgres'
-                    user = 'postgres'
-                    password = 'postgres'
-                }
-
-                generator {
-                    name = 'org.jooq.codegen.JavaGenerator'
-
-                    database {
-                        name = 'org.jooq.meta.postgres.PostgresDatabase'
-                        inputSchema = 'public'
-                    }
-
-                    target {
-                        packageName = 'com.github.karmadeb.locklogin.neo.common.orm'
-                        directory = 'build/generated-src/jooq/main'
-                    }
-                }
-            }
-        }
-    }
 }
