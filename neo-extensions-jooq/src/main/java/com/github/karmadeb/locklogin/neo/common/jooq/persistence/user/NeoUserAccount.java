@@ -18,8 +18,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Scheduled for removal as this will be moved along the user manager
- * to the jooq extension
+ * Official user account implementation. I personally think
+ * this is currently enough for most of the use cases, but as
+ * always, you can extend as you please the Account interface
+ * and provide your own account instance, just don't forge to
+ * properly migrate and provide a reverse-migration in your
+ * driver.
  */
 public final class NeoUserAccount implements Account {
 

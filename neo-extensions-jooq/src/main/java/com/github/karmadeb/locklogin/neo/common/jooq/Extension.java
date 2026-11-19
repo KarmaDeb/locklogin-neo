@@ -68,9 +68,9 @@ public final class Extension extends NeoExtension {
 				.orElseThrow();
 
 		JooQDriver.register(SQLDialect.SQLITE, new SQLiteDriver());
-		JooQDriver.register(SQLDialect.SQLITE, new PostgresDriver());
-		JooQDriver.register(SQLDialect.SQLITE, new MySQLDriver());
-		JooQDriver.register(SQLDialect.SQLITE, new MariaDBDriver());
+		JooQDriver.register(SQLDialect.POSTGRES, new PostgresDriver());
+		JooQDriver.register(SQLDialect.MYSQL, new MySQLDriver());
+		JooQDriver.register(SQLDialect.MARIADB, new MariaDBDriver());
 
 		JooQDriver driver = JooQDriver.resolve(configuration.dialect())
 				.orElseThrow(() -> new NoSuchElementException("Driver not supported: " + configuration.dialect()));
