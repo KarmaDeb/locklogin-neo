@@ -203,6 +203,23 @@ persistence:
 
 ---
 
+## Platform Support
+
+At present, the only supported platform is **Bukkit** (Spigot/Paper). The platform-specific implementation lives in the `persistence` package as a Bukkit-targeted `UserManager` and related classes that bridge the LockLogin API with Bukkit's player lifecycle events.
+
+### This extension as a multi-platform example
+
+The JOOQ extension is designed to demonstrate how to properly implement a multi-platform extension **without depending on `neo-api-bridge`**. The core persistence logic — `JooQDriver`, connection pooling, migration, and schema management — is entirely platform-agnostic. Platform-specific code is isolated in a separate layer that implements the `UserManager` and `PersistenceManager` interfaces from `neo-api`.
+
+This means adding support for a new platform (e.g., BungeeCord, Velocity, or Fabric) requires only writing a new platform adapter that implements the same interfaces — the database layer remains untouched. The extension structure clearly separates:
+
+- **Platform-independent core** — `JooQDriver`, provider drivers, configuration, and connection pooling.
+- **Platform-specific adapter** — the Bukkit implementation that connects player events to account operations.
+
+This per-platform adapter approach is the recommended way to build multi-platform extensions, as it gives full control over platform-specific behavior without being constrained by an abstraction layer that may not fit every use case.
+
+---
+
 ## Licensing
 
 JOOQ is used under the Apache Software License 2.0 (ASL 2.0). The free OSS edition is intended and officially supported exclusively for open-source database engines (MySQL, PostgreSQL, MariaDB, SQLite, H2, etc.). Using commercial databases (Oracle, SQL Server, DB2, etc.) or advanced commercial-only features requires a paid commercial license from the JOOQ authors.

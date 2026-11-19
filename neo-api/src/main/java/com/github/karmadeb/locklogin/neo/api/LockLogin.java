@@ -1,5 +1,6 @@
 package com.github.karmadeb.locklogin.neo.api;
 
+import com.github.karmadeb.locklogin.neo.api.agnostic.ServerPlatform;
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigRegistry;
 import com.github.karmadeb.locklogin.neo.api.extension.ExtensionManager;
 import com.github.karmadeb.locklogin.neo.api.persistence.PersistenceManager;
@@ -69,6 +70,13 @@ public abstract class LockLogin<T> {
 	void stage(final Stage stage) {
 		this.stage = Objects.requireNonNull(stage);
 	}
+
+	/**
+	 * Get the current platform
+	 * @return the current server platform
+	 */
+	@NotNull
+	public abstract ServerPlatform platform();
 
 	/**
 	 * Get the extension manager.

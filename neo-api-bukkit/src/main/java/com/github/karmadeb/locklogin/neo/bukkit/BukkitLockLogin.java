@@ -1,12 +1,15 @@
 package com.github.karmadeb.locklogin.neo.bukkit;
 
 import com.github.karmadeb.locklogin.neo.api.LockLogin;
+import com.github.karmadeb.locklogin.neo.api.agnostic.ServerPlatform;
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigRegistry;
 import com.github.karmadeb.locklogin.neo.api.extension.ExtensionManager;
 import com.github.karmadeb.locklogin.neo.api.persistence.PersistenceManager;
+import com.github.karmadeb.locklogin.neo.common.NeoServerPlatform;
 import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationRegistry;
 import com.github.karmadeb.locklogin.neo.common.extension.ExtensionLoader;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -17,11 +20,25 @@ import java.util.Objects;
 @SuppressWarnings("unused")
 public final class BukkitLockLogin extends LockLogin<Player> {
 
+	private final NeoServerPlatform platform;
 	private final ExtensionManager extensions = new ExtensionLoader();
 	private final ConfigRegistry config = new ConfigurationRegistry();
 	private PersistenceManager<Player> persistence;
 
-	private BukkitLockLogin() {}
+	@Contract("null -> fail")
+	private BukkitLockLogin(final NeoServerPlatform platform) {
+		this.platform = Objects.requireNonNull(platform);
+	}
+
+	/**
+	 * Get the current platform
+	 *
+	 * @return the current server platform
+	 */
+	@Override
+	public @NotNull ServerPlatform platform() {
+		return this.platform;
+	}
 
 	/**
 	 * Get the extension manager.

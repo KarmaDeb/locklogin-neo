@@ -29,8 +29,9 @@ public interface UserManager<T> {
 	/**
 	 * Get the existing account for the specified
 	 * player. If the player never connected to the
-	 * server or never completed the registration process,
-	 * this method will return an empty optional
+	 * server this method creates a new account instance
+	 * and returns it, implementations should use the
+	 * player instance to fill the required fields.
 	 * @param player the player
 	 * @return the player account fetch task
 	 */
@@ -41,9 +42,8 @@ public interface UserManager<T> {
 	 * Get an existing account by its ID. If no record
 	 * with ID is present, this method return an empty
 	 * optional. The core difference between this and
-	 * {@link #account(Object)} is that this method will
-	 * return even if the account never completed the
-	 * registration process
+	 * {@link #account(T)} is that this method does not
+	 * create a new account instance as required.
 	 * @param id the account id
 	 * @return the player account fetch task
 	 */

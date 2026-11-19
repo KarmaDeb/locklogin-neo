@@ -1,6 +1,7 @@
 package com.github.karmadeb.locklogin.neo.common.jooq.persistence.driver;
 
 import com.github.karmadeb.locklogin.neo.api.Constants;
+import com.github.karmadeb.locklogin.neo.api.SneakyFunction;
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.persistence.driver.PersistenceDriver;
 import com.github.karmadeb.locklogin.neo.api.persistence.exception.UnsupportedDriverException;
@@ -19,8 +20,11 @@ import org.jooq.impl.DSL;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -56,10 +60,32 @@ public abstract class JooQDriver implements PersistenceDriver {
 
 	protected final Class<?> driver;
 	protected final NamespacedIdentity id;
+	protected final SQLDialect dialect;
 	private final AtomicReference<CompletableFuture<HikariDataSource>> connectTaskRef = new AtomicReference<>();
 	private final AtomicReference<CompletableFuture<Void>> closeTaskRef = new AtomicReference<>();
 
 	protected HikariDataSource dataSource;
+
+	private static final Map<SQLDialect, JooQDriver> providers = new ConcurrentHashMap<>();
+
+	/**
+	 * Register a custom driver for the specified SQL dialect
+	 * @param dialect the dialect
+	 * @param driver the driver
+	 */
+	public static void register(final SQLDialect dialect, final JooQDriver driver) {
+		providers.put(dialect, driver);
+	}
+
+	/**
+	 * Resolve a driver by its dialect
+	 * @param dialect the SQL dialect
+	 * @return the dialect driver
+	 */
+	public static Optional<? extends JooQDriver> resolve(final SQLDialect dialect) {
+		JooQDriver driver = providers.get(dialect);
+		return Optional.ofNullable(driver);
+	}
 
 	/**
 	 * Creates a new JOOQ driver
@@ -70,6 +96,7 @@ public abstract class JooQDriver implements PersistenceDriver {
 	public JooQDriver(final Class<?> driver, final SQLDialect dialect) {
 		this.driver = Objects.requireNonNull(driver);
 		this.id = NamespacedIdentity.create(Constants.LOCKLOGIN_EXTENSION_ID, Objects.requireNonNull(dialect).name());
+		this.dialect = dialect;
 	}
 
 	/**
@@ -181,6 +208,54 @@ public abstract class JooQDriver implements PersistenceDriver {
 				return newTask;
 			}
 		}
+	}
+
+	/**
+	 * Execute an SQL routine using a DSL context
+	 * @return the routine
+	 */
+	@NotNull
+	public final <R> CompletableFuture<R> execute(final SneakyFunction<DSLContext, R> function) {
+		CompletableFuture<R> task = new CompletableFuture<>();
+
+		SQL_ASYNC_EXECUTOR.submit(() -> {
+			if (!this.connected()) {
+				//noinspection resource
+				this.connect().join();
+			}
+
+			try {
+				DSLContext context = DSL.using(this.dataSource, this.dialect);
+
+				R result = function.apply(context);
+				task.complete(result);
+			} catch (Exception ex) {
+				task.completeExceptionally(ex);
+			}
+		});
+
+		return task;
+	}
+
+	/**
+	 * Run a task asynchronously. This is not intended for tasks
+	 * which are not bound to a DSLContext
+	 * @param operation the operation to execute
+	 */
+	public final CompletableFuture<Void> execute(final Runnable operation) {
+		CompletableFuture<Void> task = new CompletableFuture<>();
+
+		SQL_ASYNC_EXECUTOR.submit(() -> {
+			try {
+				operation.run();
+
+				task.complete(null);
+			} catch (Throwable ex) {
+				task.completeExceptionally(ex);
+			}
+		});
+
+		return task;
 	}
 
 	@NotNull

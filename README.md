@@ -57,6 +57,14 @@ Essential extensions are registered this way by the LockLogin plugin itself. Mos
 |---|---|
 | **neo-essentials-jooq** | Provides official database persistence support through JOOQ for multiple SQL dialects (MySQL, MariaDB, PostgreSQL, SQLite). See [neo-extensions-jooq/README.md](neo-extensions-jooq/README.md) for details. |
 
+## neo-api-bridge (Experimental)
+
+The **neo-api-bridge** module is a currently **experimental** API intended to act as a single source of truth for multi-platform extensions. Instead of writing separate per-platform adapters, extensions could depend on the bridge abstractions to interact with players, send protocol messages, and handle positioning in a platform-agnostic way.
+
+However, as an experimental API, **neo-api-bridge is subject to breaking changes without notice** — it could be significantly restructured or even removed entirely in future versions. It should not be relied upon for production extensions.
+
+**Personal recommendation:** For now, writing per-platform adapters is the preferred approach. The [neo-extensions-jooq](neo-extensions-jooq/README.md) extension demonstrates this pattern: the core logic is platform-agnostic, while platform-specific code is isolated in a thin adapter layer. This gives full control over platform-specific behavior without being constrained by an abstraction that may evolve or disappear.
+
 ## API Evolution
 
 The most significant change across generations is the extension system. Understanding this evolution helps developers migrating from older versions:

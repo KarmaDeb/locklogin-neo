@@ -34,6 +34,7 @@ plugin loading it is the own LockLogin.
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -43,6 +44,8 @@ dependencies {
 
     implementation("org.jooq:jooq:3.21.9")
 
+    compileOnly('org.bukkit:bukkit:26.3-R0.1-SNAPSHOT')
+
     compileOnly("commons-validator:commons-validator:1.11.0")
 
     compileOnly("com.zaxxer:HikariCP:7.1.0")
@@ -51,6 +54,7 @@ dependencies {
     compileOnly("org.xerial:sqlite-jdbc:3.54.1.0")
     compileOnly("org.postgresql:postgresql:42.7.14")
 
+    compileOnly(project(':neo-common'))
     compileOnly(project(':neo-api-bukkit'))
 
     // Special definitions

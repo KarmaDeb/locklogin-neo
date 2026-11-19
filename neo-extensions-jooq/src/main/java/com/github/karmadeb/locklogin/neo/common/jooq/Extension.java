@@ -3,6 +3,7 @@ package com.github.karmadeb.locklogin.neo.common.jooq;
 import com.github.karmadeb.locklogin.neo.api.LockLogin;
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigFile;
 import com.github.karmadeb.locklogin.neo.api.extension.ExtensionLifecycle;
+import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.extension.NeoExtension;
 import com.github.karmadeb.locklogin.neo.api.extension.description.annotation.AuthorMeta;
 import com.github.karmadeb.locklogin.neo.api.extension.description.annotation.ExtensionMeta;
@@ -16,6 +17,9 @@ import com.github.karmadeb.locklogin.neo.common.jooq.persistence.driver.provider
 import com.github.karmadeb.locklogin.neo.common.jooq.persistence.driver.provider.PostgresDriver;
 import com.github.karmadeb.locklogin.neo.common.jooq.persistence.driver.provider.SQLiteDriver;
 import org.jetbrains.annotations.NotNull;
+import org.jooq.SQLDialect;
+
+import java.util.NoSuchElementException;
 
 @ExtensionMeta(
 		name = "LockLogin JOOQ",
@@ -57,21 +61,33 @@ public final class Extension extends NeoExtension {
 	 * @param lifecycle the lifecycle involved in the operation
 	 */
 	@Override
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	public void enabled(final @NotNull ExtensionLifecycle lifecycle) {
 		LockLogin<?> api = LockLogin.get();
 		SQLConfiguration configuration = api.configurations().part(ConfigFile.PLUGIN_CONFIG, SQLConfiguration.class)
 				.orElseThrow();
 
-		JooQDriver driver = switch (configuration.dialect()) {
-			case SQLITE -> new SQLiteDriver();
-			case POSTGRES -> new PostgresDriver();
-			case MYSQL -> new MySQLDriver();
-			case MARIADB -> new MariaDBDriver();
-			case null, default -> throw new UnsupportedOperationException("Driver not supported: " + configuration.dialect());
+		JooQDriver.register(SQLDialect.SQLITE, new SQLiteDriver());
+		JooQDriver.register(SQLDialect.SQLITE, new PostgresDriver());
+		JooQDriver.register(SQLDialect.SQLITE, new MySQLDriver());
+		JooQDriver.register(SQLDialect.SQLITE, new MariaDBDriver());
+
+		JooQDriver driver = JooQDriver.resolve(configuration.dialect())
+				.orElseThrow(() -> new NoSuchElementException("Driver not supported: " + configuration.dialect()));
+
+		NamespacedIdentity id = api.platform().id();
+		PersistenceManager manager = switch (id.resource()) {
+			case "bukkit" -> new JooQBukkitPersistence(driver);
+			case "proxy" -> {
+				switch (id.resource()) {
+					case "bungee" -> throw new UnsupportedOperationException("Not implemented");
+					case "velocity" -> throw new UnsupportedOperationException("Not implemented");
+					default -> throw new IllegalStateException("Unsupported JooQ extension platform: " + id.resource());
+				}
+			}
+			default -> throw new IllegalStateException("Unsupported JooQ extension platform: " + id.resource());
 		};
 
-		// TODO: Detect or let the platform decide?
-		PersistenceManager manager = new JooQBukkitPersistence(driver);
 		api.persistence(manager);
 	}
 }
