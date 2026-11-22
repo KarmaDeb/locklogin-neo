@@ -1,6 +1,6 @@
 package com.github.karmadeb.locklogin.neo.api.messaging.protocol.payload;
 
-import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 
 /**
  * Represents a message payload

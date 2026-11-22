@@ -1,8 +1,7 @@
 package com.github.karmadeb.locklogin.neo.common.security;
 
 import com.github.karmadeb.locklogin.neo.api.Constants;
-import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
-import com.github.karmadeb.locklogin.neo.api.extension.NeoExtension;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.security.HashMethod;
 import com.github.karmadeb.locklogin.neo.api.security.hash.Hash;
 import com.github.karmadeb.locklogin.neo.api.security.hash.HashProperties;
@@ -10,21 +9,15 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
-import java.util.Optional;
 
+@SuppressWarnings("unused")
 public final class HashMethodProxy implements HashMethod {
 
-	private final NeoExtension extension;
 	private final HashMethod method;
 
-	@Contract("_, null -> fail")
-	public HashMethodProxy(final NeoExtension extension, final HashMethod method) {
-		this.extension = extension;
+	@Contract("null -> fail")
+	public HashMethodProxy(final HashMethod method) {
 		this.method = Objects.requireNonNull(method);
-	}
-
-	public Optional<NeoExtension> extension() {
-		return Optional.ofNullable(this.extension);
 	}
 
 	@Override
@@ -50,7 +43,7 @@ public final class HashMethodProxy implements HashMethod {
 	@Override
 	public boolean requiresUpdate(final @NotNull Hash hash) {
 		HashProperties properties = hash.properties();
-		String name = properties.getString(Constants.HASH_PROP_HASH_ID);
+		String name = properties.getString(Constants.HASH_PROP_RESOURCE_ID);
 
 		return name.equals(this.id().resource()) &&
 				this.method.requiresUpdate(hash);
@@ -60,9 +53,8 @@ public final class HashMethodProxy implements HashMethod {
 	public @NotNull Hash hash(@NotNull String input, byte @NotNull [] salt, @NotNull HashProperties properties) {
 		HashProperties clone = HashProperties.cloneOf(Objects.requireNonNull(properties));
 
-		clone.set(Constants.HASH_PROP_EXT_ID,
-				this.extension == null ? Constants.LOCKLOGIN_EXTENSION_ID : this.extension.id());
-		clone.set(Constants.HASH_PROP_HASH_ID, this.id().toString());
+		clone.set(Constants.HASH_PROP_NAMESPACE_ID, Constants.LOCKLOGIN);
+		clone.set(Constants.HASH_PROP_RESOURCE_ID, this.id().toString());
 
 		return this.method.hash(Objects.requireNonNull(input),
 				Objects.requireNonNull(salt),
@@ -84,7 +76,7 @@ public final class HashMethodProxy implements HashMethod {
 	@Override
 	public boolean verify(@NotNull Hash hash, @NotNull String input) {
 		HashProperties properties = hash.properties();
-		String name = properties.getString(Constants.HASH_PROP_HASH_ID);
+		String name = properties.getString(Constants.HASH_PROP_RESOURCE_ID);
 
 		return name.equals(this.id().resource()) &&
 				this.method.verify(hash, input);

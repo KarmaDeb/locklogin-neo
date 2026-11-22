@@ -11,8 +11,8 @@
             <option value="$PROJECT_DIR$/neo-api" />
             <option value="$PROJECT_DIR$/neo-api-bridge" />
             <option value="$PROJECT_DIR$/neo-common" />
-            <option value="$PROJECT_DIR$/neo-extensions-crypto" />
-            <option value="$PROJECT_DIR$/neo-extensions-jooq" />
+            <option value="$PROJECT_DIR$/neo-essentials-crypto" />
+            <option value="$PROJECT_DIR$/neo-essentials-jooq" />
           </set>
         </option>
         <option name="myGradleHome" value="" />

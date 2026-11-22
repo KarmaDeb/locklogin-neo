@@ -10,12 +10,9 @@ import java.security.SecureRandom;
  */
 public class Constants {
 
-	public static final String LOCKLOGIN_EXTENSION_ID = "locklogin";
-	public static final String HASH_PROP_EXT_ID = "lei";
-	public static final String HASH_PROP_HASH_ID = "lhi";
-
-	public static final String RESOURCE_HASH = "hashes";
-	public static final String RESOURCE_AUTH_LAYER = "auth-layers";
+	public static final String LOCKLOGIN = "locklogin";
+	public static final String HASH_PROP_NAMESPACE_ID = "lei";
+	public static final String HASH_PROP_RESOURCE_ID = "lhi";
 
 	public static final SecureRandom RANDOM = new SecureRandom();
 	public static final Path WORKING_DIRECTORY;

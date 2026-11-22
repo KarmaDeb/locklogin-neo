@@ -1,7 +1,6 @@
 package com.github.karmadeb.locklogin.neo.api.security.authentication;
 
-import com.github.karmadeb.locklogin.neo.api.Constants;
-import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer.HookFailure;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -22,6 +21,7 @@ import java.util.function.BiConsumer;
  * and safe
  * @param <T> the player type, for multi-platform purposes
  */
+@SuppressWarnings("unused")
 public interface AuthSession<T> extends Future<Boolean> {
 
 	/**
@@ -51,7 +51,7 @@ public interface AuthSession<T> extends Future<Boolean> {
 	 */
 	@Contract("null -> fail")
 	default boolean add(final AuthLayer<?> layer) {
-		return add(NamespacedIdentity.create(Constants.LOCKLOGIN_EXTENSION_ID, "top"), Objects.requireNonNull(layer));
+		return add(NamespacedIdentity.locklogin("top"), Objects.requireNonNull(layer));
 	}
 
 	/**

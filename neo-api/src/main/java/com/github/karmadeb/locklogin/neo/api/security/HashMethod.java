@@ -1,8 +1,7 @@
 package com.github.karmadeb.locklogin.neo.api.security;
 
 import com.github.karmadeb.locklogin.neo.api.Constants;
-import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
-import com.github.karmadeb.locklogin.neo.api.extension.registry.RegistryItem;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.security.hash.Hash;
 import com.github.karmadeb.locklogin.neo.api.security.hash.HashProperties;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
  * This allows plugin developers to support more hashing methods
  * than the plugin defaults without requiring it to update
  */
-public interface HashMethod extends RegistryItem {
+public interface HashMethod {
 
 	/**
 	 * Get the hashing method id. The ID can be
@@ -21,7 +20,6 @@ public interface HashMethod extends RegistryItem {
 	 * same extension
 	 * @return the hash method id
 	 */
-	@Override
 	@NotNull NamespacedIdentity id();
 
 	/**

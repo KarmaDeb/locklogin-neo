@@ -1,6 +1,6 @@
 package com.github.karmadeb.locklogin.neo.api.persistence.driver;
 
-import com.github.karmadeb.locklogin.neo.api.extension.registry.RegistryItem;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.persistence.exception.UnsupportedDriverException;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,18 +15,15 @@ import java.util.concurrent.CompletableFuture;
  * - MySQL
  * - SQLite
  */
-public interface PersistenceDriver extends RegistryItem {
+@SuppressWarnings("unused")
+public interface PersistenceDriver {
 
-	enum FormatTarget {
-		/**
-		 * Format target for a table name
-		 */
-		TABLE_NAME,
-		/**
-		 * Format target for a field name
-		 */
-		FIELD_NAME
-	}
+	/**
+	 * Get the driver id
+	 * @return the name of the driver
+	 */
+	@NotNull
+	NamespacedIdentity id();
 
 	/**
 	 * Get the driver name

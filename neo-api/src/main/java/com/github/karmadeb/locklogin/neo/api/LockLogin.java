@@ -2,9 +2,10 @@ package com.github.karmadeb.locklogin.neo.api;
 
 import com.github.karmadeb.locklogin.neo.api.agnostic.ServerPlatform;
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigRegistry;
-import com.github.karmadeb.locklogin.neo.api.extension.ExtensionManager;
 import com.github.karmadeb.locklogin.neo.api.persistence.PersistenceManager;
 import com.github.karmadeb.locklogin.neo.api.persistence.driver.PersistenceDriver;
+import com.github.karmadeb.locklogin.neo.api.security.HashManager;
+import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayerManager;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,6 +15,7 @@ import java.util.Objects;
  * Represents the LockLogin API instance
  * @param <T> the platform player type
  */
+@SuppressWarnings("unused")
 public abstract class LockLogin<T> {
 
 	private static LockLogin<?> instance;
@@ -79,13 +81,6 @@ public abstract class LockLogin<T> {
 	public abstract ServerPlatform platform();
 
 	/**
-	 * Get the extension manager.
-	 * @return the extension manager
-	 */
-	@NotNull
-	public abstract ExtensionManager extensions();
-
-	/**
 	 * Get the extensions configuration registry
 	 * @return the configuration registry
 	 */
@@ -98,6 +93,20 @@ public abstract class LockLogin<T> {
 	 */
 	@NotNull
 	public abstract PersistenceManager<T> persistence();
+
+	/**
+	 * Get the current hash manager
+	 * @return the hash manager
+	 */
+	@NotNull
+	public abstract HashManager hashes();
+
+	/**
+	 * Get the current auth layer manager
+	 * @return the auth layer manager
+	 */
+	@NotNull
+	public abstract AuthLayerManager authLayers();
 
 	/**
 	 * Set the current persistence manager. This operation

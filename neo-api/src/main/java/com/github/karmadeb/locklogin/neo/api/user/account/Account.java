@@ -1,7 +1,6 @@
 package com.github.karmadeb.locklogin.neo.api.user.account;
 
-import com.github.karmadeb.locklogin.neo.api.Constants;
-import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
@@ -16,12 +15,10 @@ import java.util.concurrent.CompletableFuture;
  * In order to prevent database with tons of operations, modifying
  * also requires an open transaction to work.
  */
+@SuppressWarnings("unused")
 public interface Account {
 
-	NamespacedIdentity SECRET_PASSWORD = NamespacedIdentity.create(
-			Constants.LOCKLOGIN_EXTENSION_ID,
-			"password"
-	);
+	NamespacedIdentity SECRET_PASSWORD = NamespacedIdentity.locklogin("password");
 
 	/**
 	 * Get the stored account UUID. Always represents

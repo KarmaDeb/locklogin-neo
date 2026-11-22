@@ -1,6 +1,6 @@
 package com.github.karmadeb.locklogin.neo.api.agnostic;
 
-import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import org.jetbrains.annotations.NotNull;
 
 /**

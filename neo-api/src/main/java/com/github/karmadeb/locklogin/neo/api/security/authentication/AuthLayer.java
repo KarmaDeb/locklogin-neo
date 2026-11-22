@@ -1,7 +1,6 @@
 package com.github.karmadeb.locklogin.neo.api.security.authentication;
 
-import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
-import com.github.karmadeb.locklogin.neo.api.extension.registry.RegistryItem;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,7 +20,15 @@ import java.util.function.Consumer;
  * the {@link AuthSession<T>}
  * @param <T> the player type, for multi-platform purposes
  */
-public interface AuthLayer<T> extends RegistryItem {
+@SuppressWarnings("unused")
+public interface AuthLayer<T> {
+
+	/**
+	 * Get the layer id
+	 * @return the ID of the layer
+	 */
+	@NotNull
+	NamespacedIdentity id();
 
 	/**
 	 * Get the layer type. This is essentially required

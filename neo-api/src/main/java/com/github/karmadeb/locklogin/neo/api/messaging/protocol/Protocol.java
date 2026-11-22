@@ -1,6 +1,6 @@
 package com.github.karmadeb.locklogin.neo.api.messaging.protocol;
 
-import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.messaging.protocol.payload.Codec;
 import com.github.karmadeb.locklogin.neo.api.messaging.protocol.payload.Payload;
 import org.jetbrains.annotations.Contract;
@@ -14,6 +14,7 @@ import java.util.Optional;
  * The protocol registry allows to register
  * different payloads and their codecs
  */
+@SuppressWarnings("unused")
 public final class Protocol {
 
 	private static final Map<NamespacedIdentity, Codec<?>> codecs = new HashMap<>();
@@ -70,7 +71,7 @@ public final class Protocol {
 			Codec<T> resolved = (Codec) codec;
 
 			return Optional.ofNullable(resolved);
-		} catch (ClassCastException _) {};
+		} catch (ClassCastException _) {}
 
 		return Optional.empty();
 	}

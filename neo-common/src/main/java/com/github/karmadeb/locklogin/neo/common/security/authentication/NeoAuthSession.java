@@ -1,7 +1,7 @@
 package com.github.karmadeb.locklogin.neo.common.security.authentication;
 
-import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
-import com.github.karmadeb.locklogin.neo.api.extension.registry.ExtensionRegistryType;
+import com.github.karmadeb.locklogin.neo.api.LockLogin;
+import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.player.PlayerAdapter;
 import com.github.karmadeb.locklogin.neo.api.player.PlayerAdapterFactory;
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer;
@@ -9,7 +9,6 @@ import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer.H
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer.HookFailure;
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer.Result;
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthSession;
-import com.github.karmadeb.locklogin.neo.common.extension.NeoRegistry;
 import com.github.karmadeb.locklogin.neo.common.struct.SortedDuplexMap;
 import com.github.karmadeb.locklogin.neo.common.struct.SortedDuplexMap.Walker;
 import org.jetbrains.annotations.Contract;
@@ -44,18 +43,13 @@ public final class NeoAuthSession<T> implements AuthSession<T> {
 	public NeoAuthSession(final Class<T> type) {
 		this.type = Objects.requireNonNull(type);
 
-		ExtensionRegistryType<AuthLayer<?>> registry = NeoRegistry.registry().authLayer();
-		List<AuthLayer<?>> collected = new ArrayList<>();
-		for (NamespacedIdentity id : registry) {
-			AuthLayer<?> layer = registry.get(id).orElse(null);
-			if (layer == null || !layer.autoRegister() || (!layer.type().equals(this.type) && !layer.type().equals(PlayerAdapter.class))) {
-				continue;
-			}
+		LockLogin<?> api = LockLogin.get();
+		List<AuthLayer<?>> layers = api.authLayers().collect().stream()
+				.filter(layer -> !layer.autoRegister())
+				.filter(layer -> layer.type().equals(this.type) || layer.type().equals(PlayerAdapter.class))
+				.toList();
 
-			collected.add(layer);
-		}
-
-		for (AuthLayer<?> layer : sortTopologically(collected)) {
+		for (AuthLayer<?> layer : sortTopologically(layers)) {
 			this.add(layer);
 		}
 	}
@@ -93,7 +87,7 @@ public final class NeoAuthSession<T> implements AuthSession<T> {
 	public boolean add(final @NotNull NamespacedIdentity before, final @NotNull AuthLayer<?> layer) {
 		if (running || this.result != null || this.layers.contains(layer.id()) || (!layer.type().equals(this.type) &&
 				!layer.type().equals(PlayerAdapter.class)) ||
-				NeoRegistry.registry().authLayer().get(layer.id()).isEmpty()) {
+				LockLogin.get().authLayers().get(layer.id()).isEmpty()) {
 			return false;
 		}
 
@@ -226,9 +220,7 @@ public final class NeoAuthSession<T> implements AuthSession<T> {
 		}
 
 		Hook master = new Hook()
-				.onSuccess(() -> {
-					this.result = true;
-				})
+				.onSuccess(() -> this.result = true)
 				.onFailure(failure -> {
 					this.result = false;
 					this.failure = failure;

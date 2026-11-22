@@ -18,7 +18,7 @@ The main purpose of LockLogin Neo is different. Rather than trying to preserve e
 
 In short: simpler core, faster execution, reliable behavior, and a powerful API for those who need more.
 
-But this doesn't mean features are disappearing forever. Most of them will eventually make their way back — not bundled into the plugin itself, but as **extensions**. By decoupling features from the core, the plugin stays lighter and less prone to errors where one broken feature brings everything down. Instead, each extension operates independently, so if something goes wrong, it's isolated and doesn't break the entire system.
+But this doesn't mean features are disappearing forever. Most of them will eventually make their way back — not bundled into the plugin itself, but as **modular components**. By decoupling features from the core, the plugin stays lighter and less prone to errors where one broken feature brings everything down. Instead, each component operates independently, so if something goes wrong, it's isolated and doesn't break the entire system.
 
 ## Project History
 
@@ -26,10 +26,10 @@ LockLogin Neo is the culmination of four generations of development:
 
 | Generation | Project | Status | Description |
 |---|---|---|---|
-| **0th** | **LockLoginLegacy** | Original version (archived) | The very first version of LockLogin — a simple authentication plugin that predates the official API and modular architecture. It had no extension system, no API, and no modularity. It was the most basic version of LockLogin, and LockLogin Neo aims to replicate its simplicity while adding the advantages of extensions, API, and modularity. |
+| **0th** | **LockLoginLegacy** | Original version (archived) | The very first version of LockLogin — a simple authentication plugin that predates the official API and modular architecture. It had no modular components, no API, and no modularity. It was the most basic version of LockLogin, and LockLogin Neo aims to replicate its simplicity while adding the advantages of modularity, API, and structured essentials. |
 | **1st** | **LockLoginReborn** | Last released version | The original plugin with a monolithic module system built around an abstract `PluginModule` class. Modules were loaded via JAR files with license key validation, used a card-based queue system for async tasks, and relied heavily on reflection for event handling. Source available in `in-memory-of/LockLoginReborn/`. |
 | **2nd** | **LockLogin2** | Abandoned refactor | An intermediate attempt to modernize the codebase. Introduced a clean `Module` interface with lifecycle methods (`onLoad`, `onEnable`, `onDisable`), a `PluginModule<T>` generic interface for plugin-registered modules, a static `CurrentPlugin` singleton for lazy API access, and a `ModuleManager` for event and command registration. Source available in `in-memory-of/LockLogin2/`. |
-| **3rd** | **LockLogin Neo** | Active development (WIP) | The current project — a complete rewrite that takes the best ideas from both predecessors and reimagines them. Replaces the module system with a powerful extension system, introduces namespaced resource identities, a registry-based architecture, and platform-agnostic abstractions. A PaperMC-compatible version may be closer than it seems. |
+| **3rd** | **LockLogin Neo** | Active development (WIP) | The current project — a complete rewrite that takes the best ideas from both predecessors and reimagines them. Replaces the module system with a modular essentials architecture, introduces namespaced resource identities, a manager-based architecture via `LockLogin.get()`, and platform-agnostic abstractions. A PaperMC-compatible version may be closer than it seems. |
 
 ## Architecture
 
@@ -37,38 +37,34 @@ The project is split into four Gradle modules, each with a distinct responsibili
 
 | Module | Description |
 |---|---|
-| **neo-api** | The core API — defines the contracts for extensions, configuration, messaging, security, and authentication layers. This is the foundation everything else builds on. |
+| **neo-api** | The core API — defines the contracts for configuration, messaging, security, and authentication layers. This is the foundation everything else builds on. |
 | **neo-api-bridge** | A platform-agnostic bridge layer that provides abstractions for player interaction, protocol messaging (titles, action bars), and positioning. It offers a centralized way to interact with players regardless of the underlying server platform. |
 | **neo-common** | Shared implementations and utilities — configuration readers/writers, network buffer handling, and common helpers used across the project. |
-| **neo-extensions-jooq** | The JOOQ extension module — provides database integration using JOOQ (Java Object Oriented Querying) for type-safe SQL queries and database operations. |
-| **neo-extensions-crypto** | The crypto extension module — provides password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. |
+| **neo-essentials-jooq** | The JOOQ essentials module — provides database integration using JOOQ (Java Object Oriented Querying) for type-safe SQL queries and database operations. |
+| **neo-essentials-crypto** | The crypto essentials module — provides password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. |
 
 ## LockLogin Essentials
 
-LockLogin Essentials is a subset of extensions that are provided and built directly into the LockLogin codebase. Their source code lives inside the project and they are loaded by LockLogin during its own startup lifecycle. In LockLogin Neo, extensions are not discovered — they are **registered** by a plugin through the extension API:
+LockLogin Essentials are built-in components provided and built directly into the LockLogin codebase. Their source code lives inside the project and they are loaded by LockLogin during its own startup lifecycle. Think of them as core features that are modular and replaceable.
 
-```java
-LockLogin.get().extensions().load(new MyExtension(...));
-```
+Most essential features can be disabled by using the `EssentialFeatures#disable` method. Disabling an essential feature does not remove its API — it simply tells LockLogin not to load the essential component's class. The API remains available for any other component that requires it, which is why they are called **essentials**: they are essential for the plugin environment.
 
-Essential extensions are registered this way by the LockLogin plugin itself. Most of them can be disabled by other extensions by using the `EssentialFeatures#disable` method. Disabling an essential feature does not remove the extension or its API — it simply tells LockLogin not to load the extension class. The API remains available for any other extension that requires it, which is why they are called **essentials**: they are essential for the plugin extension environment.
-
-| Extension | Description |
+| Essential | Description |
 |---|---|
-| **neo-essentials-jooq** | Provides official database persistence support through JOOQ for multiple SQL dialects (MySQL, MariaDB, PostgreSQL, SQLite). See [neo-extensions-jooq/README.md](neo-extensions-jooq/README.md) for details. |
-| **neo-essentials-crypto** | Provides official password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. See [neo-extensions-crypto/README.md](neo-extensions-crypto/README.md) for details. |
+| **neo-essentials-jooq** | Provides official database persistence support through JOOQ for multiple SQL dialects (MySQL, MariaDB, PostgreSQL, SQLite). See [neo-essentials-jooq/README.md](neo-essentials-jooq/README.md) for details. |
+| **neo-essentials-crypto** | Provides official password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. See [neo-essentials-crypto/README.md](neo-essentials-crypto/README.md) for details. |
 
 ## neo-api-bridge (Experimental)
 
-The **neo-api-bridge** module is a currently **experimental** API intended to act as a single source of truth for multi-platform extensions. Instead of writing separate per-platform adapters, extensions could depend on the bridge abstractions to interact with players, send protocol messages, and handle positioning in a platform-agnostic way.
+The **neo-api-bridge** module is a currently **experimental** API intended to act as a single source of truth for multi-platform components. Instead of writing separate per-platform adapters, components could depend on the bridge abstractions to interact with players, send protocol messages, and handle positioning in a platform-agnostic way.
 
-However, as an experimental API, **neo-api-bridge is subject to breaking changes without notice** — it could be significantly restructured or even removed entirely in future versions. It should not be relied upon for production extensions.
+However, as an experimental API, **neo-api-bridge is subject to breaking changes without notice** — it could be significantly restructured or even removed entirely in future versions. It should not be relied upon for production use.
 
-**Personal recommendation:** For now, writing per-platform adapters is the preferred approach. The [neo-extensions-jooq](neo-extensions-jooq/README.md) extension demonstrates this pattern: the core logic is platform-agnostic, while platform-specific code is isolated in a thin adapter layer. This gives full control over platform-specific behavior without being constrained by an abstraction that may evolve or disappear.
+**Personal recommendation:** For now, writing per-platform adapters is the preferred approach. The [neo-essentials-jooq](neo-essentials-jooq/README.md) module demonstrates this pattern: the core logic is platform-agnostic, while platform-specific code is isolated in a thin adapter layer. This gives full control over platform-specific behavior without being constrained by an abstraction that may evolve or disappear.
 
 ## API Evolution
 
-The most significant change across generations is the extension system. Understanding this evolution helps developers migrating from older versions:
+The most significant change across generations is the modular architecture. Understanding this evolution helps developers migrating from older versions:
 
 ### Generation 1: LockLoginReborn — Module API
 
@@ -110,37 +106,44 @@ public class MyModule implements PluginModule<MyPlugin> {
 }
 ```
 
-### Generation 3: LockLogin Neo — Extension API
+### Generation 3: LockLogin Neo — Essentials API
 
-The current system reimagines extensions from the ground up:
+The current system uses a modular essentials architecture centered around the `LockLogin` singleton:
 
-- **NeoExtension base class** — extensions extend the abstract `NeoExtension` class (which implements `Extension`), gaining access to a pre-configured `ExtensionManager`, `ExtensionDescription`, and helper methods like `id(String resource)` for namespaced resource identification.
-- **ExtensionRegistry** — a powerful registry system where extensions register resources (auth layers, hash methods) with **namespaced identities** (`extension_id:resource_name`).
-- **Plugin-based registration** — extensions are registered by plugins, not by extending framework classes. The plugin holds the extension, and the extension holds a registry.
-- **NamespacedIdentity** — every registered resource gets a unique namespaced ID, preventing collisions between extensions.
+- **Centralized API access** — all registration and configuration goes through `LockLogin.get()`, which provides access to dedicated managers for each subsystem.
+- **Configurations manager** — `LockLogin.get().configurations()` manages configuration parts and files, allowing components to register their own config sections via `append()` and retrieve parsed values via `part()`.
+- **Hashes manager** — `LockLogin.get().hashes()` manages hash method registration, allowing components to register hash methods with a specific purpose (e.g., `Purpose.PASSWORD`).
+- **Persistence manager** — `LockLogin.get().persistence()` gets and sets the persistence layer, allowing components to provide database-backed storage.
+- **Auth layers manager** — `LockLogin.get().authLayers()` manages authentication layer registration for custom auth flows.
+- **NamespacedIdentity** — every registered resource gets a unique namespaced ID, preventing collisions between components.
 - **Platform-agnostic** — the `neo-api-bridge` module provides abstractions for player interaction, protocol messaging, and positioning that work across any server platform.
 - **AuthLayer system** — replaces the old card-based challenge system with a flexible, hook-based authentication layer system supporting mandatory/optional layers, timeouts, and async resolution.
+- **ConfigPart system** — a flexible configuration framework where components define their own configuration sections with scoped paths.
 
 ```java
-// LockLogin Neo style — extending NeoExtension
-public class MyExtension extends NeoExtension {
-    @Override
-    public void enabled(ExtensionLifecycle lifecycle) {
-        registry().register(AuthLayer.class, myAuthLayer);
-    }
-}
+// LockLogin Neo style — registering through LockLogin.get()
+LockLogin<?> api = LockLogin.get();
+
+// Register configuration parts
+api.configurations().append(ConfigFile.PLUGIN_CONFIG, new MyConfiguration());
+
+// Register hash methods
+api.hashes().register(new MyHashMethod(config), Purpose.PASSWORD);
+
+// Set persistence manager
+api.persistence(new MyPersistenceManager(driver));
 ```
 
 ### Migration Summary
 
 | Concept | LockLoginReborn | LockLogin2 | LockLogin Neo |
 |---|---|---|---|
-| Module type | `PluginModule` (abstract class) | `Module` (interface) | `NeoExtension` (abstract class) |
-| Plugin registration | N/A (JAR-loaded only) | `PluginModule<T>` | Extension registered by plugin |
+| Module type | `PluginModule` (abstract class) | `Module` (interface) | Manager-based components |
+| Plugin registration | N/A (JAR-loaded only) | `PluginModule<T>` | Built-in essentials |
 | Lifecycle | Constructor + platform init | `onLoad/Enable/Disable()` | `loaded/enabled/disabled()` |
-| Event handling | `@ModuleEventHandler` + reflection | `ModuleManager.addEventHandler()` | Registry-based |
+| Event handling | `@ModuleEventHandler` + reflection | `ModuleManager.addEventHandler()` | Manager-based via `LockLogin.get()` |
 | Resource IDs | String-based | String-based | `NamespacedIdentity` |
-| API access | Direct module fields | `CurrentPlugin` singleton | Extension lifecycle + registry |
+| API access | Direct module fields | `CurrentPlugin` singleton | `LockLogin.get()` singleton |
 | Async tasks | `APICard` queue system | Standard Java concurrency | `AuthLayer.Hook` system |
 | Platform support | Bukkit/Velocity | Bukkit/Velocity | Platform-agnostic (Paper coming) |
 | Configuration | Rigid, hardcoded paths | Rigid, hardcoded paths | `ConfigPart` + `ConfigFile` system |
@@ -152,21 +155,21 @@ One of the most important architectural improvements in Neo is how the authentic
 
 - **LockLoginReborn** — the authentication flow was entirely monolithic and internal. No way to inject custom steps or modify the process from outside the plugin.
 - **LockLogin2** — introduced the `UserAuthProcess` interface with a chain-of-responsibility pattern (`process(AuthProcess previous)`), allowing modules to define custom authentication steps. However, this remained largely conceptual — the API existed but was never fully realized in practice.
-- **LockLogin Neo** — fully implements and expands on this idea with the `AuthLayer` system. Each layer is a proper `RegistryItem` with a namespaced identity, supports mandatory/optional modes, configurable timeouts, and ordering via `before()` declarations. The `AuthLayer.Hook` pattern provides a one-time-use callback system (`onSuccess`, `onFailure`, `always`) for async resolution, and typed failure results (`MESSAGE`, `SILENT`, `KICK`) give fine-grained control over what happens on authentication failure.
+- **LockLogin Neo** — fully implements and expands on this idea with the `AuthLayer` system. Each layer is registered through `LockLogin.get().authLayers()` with a namespaced identity, supports mandatory/optional modes, configurable timeouts, and ordering via `before()` declarations. The `AuthLayer.Hook` pattern provides a one-time-use callback system (`onSuccess`, `onFailure`, `always`) for async resolution, and typed failure results (`MESSAGE`, `SILENT`, `KICK`) give fine-grained control over what happens on authentication failure.
 
 ## Configuration Evolution
 
 Configuration handling has also seen a major improvement across generations:
 
-- **LockLoginReborn & LockLogin2** — configuration was rigid and hardcoded. Configuration paths and structures were fixed within the plugin, making it difficult for extensions to define their own settings or for users to customize behavior beyond what the plugin authors anticipated.
-- **LockLogin Neo** — introduces a flexible `ConfigPart` and `ConfigFile` system. Extensions can define their own configuration sections by extending `ConfigPart`, specifying a scoped path via `path()`, and initializing defaults via `init(ConfigWriter)`. The `ConfigFile` class handles file path resolution, directory creation, and stream management. Configuration parts are registered through a `ConfigRegistry`, allowing multiple extensions to each manage their own configuration sections without conflicts — a significant quality-of-life improvement for extension developers.
+- **LockLoginReborn & LockLogin2** — configuration was rigid and hardcoded. Configuration paths and structures were fixed within the plugin, making it difficult for components to define their own settings or for users to customize behavior beyond what the plugin authors anticipated.
+- **LockLogin Neo** — introduces a flexible `ConfigPart` and `ConfigFile` system. Components can define their own configuration sections by extending `ConfigPart`, specifying a scoped path via `path()`, and initializing defaults via `init(ConfigWriter)`. The `ConfigFile` class handles file path resolution, directory creation, and stream management. Configuration parts are registered through `LockLogin.get().configurations()`, allowing multiple components to each manage their own configuration sections without conflicts — a significant quality-of-life improvement for developers.
 
 ## Key Features
 
-- **Extension System** — a modular plugin architecture where extensions extend `NeoExtension` to register custom authentication layers, hash methods, and resources via a registry, each with their own lifecycle (loaded, enabled, disabled). Resources are identified by namespaced IDs to prevent collisions.
+- **Modular Essentials** — a modular architecture where built-in essentials provide core functionality (database persistence, password hashing) that can be disabled or replaced. Resources are identified by namespaced IDs to prevent collisions.
 - **Authentication Layers** — a flexible challenge-based system where each layer defines how a player authenticates. Layers can be mandatory or optional, support timeouts, ordering, and use one-time hooks for async resolution with typed failure results.
 - **Multi-Platform Design** — the API and bridge layers are designed to be platform-agnostic, with player adapters that abstract away server-specific details. A PaperMC-compatible version is on the horizon.
-- **Configuration Framework** — a flexible `ConfigPart` and `ConfigFile` system that lets extensions define their own configuration sections with scoped paths, replacing the rigid, hardcoded configuration of previous generations.
+- **Configuration Framework** — a flexible `ConfigPart` and `ConfigFile` system that lets components define their own configuration sections with scoped paths, replacing the rigid, hardcoded configuration of previous generations.
 - **Security & Hashing** — built-in support for password hashing with configurable hash methods and properties.
 - **Messaging Protocol** — a protocol-based messaging system with codecs, envelopes, and payloads for structured communication.
 
