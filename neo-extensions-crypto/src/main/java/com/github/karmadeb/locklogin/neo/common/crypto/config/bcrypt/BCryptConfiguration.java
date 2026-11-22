@@ -1,4 +1,4 @@
-package com.github.karmadeb.locklogin.neo.common.security.methods.bcrypt;
+package com.github.karmadeb.locklogin.neo.common.crypto.config.bcrypt;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPart;
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigReader;
@@ -6,7 +6,12 @@ import com.github.karmadeb.locklogin.neo.api.configuration.ConfigWriter;
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPath;
 import org.jetbrains.annotations.NotNull;
 
+
 public class BCryptConfiguration extends ConfigPart {
+
+	public static final int DEFAULT_COST = 12;
+	public static final int MIN_BCRYPT_COST = 4;
+	public static final int MAX_BCRYPT_COST = 31;
 
 	private ConfigReader reader;
 
@@ -25,7 +30,7 @@ public class BCryptConfiguration extends ConfigPart {
 	}
 
 	public int cost() {
-		return this.reader.getInt("cost").orElse(BcryptHash.DEFAULT_COST);
+		return this.reader.getInt("cost").orElse(DEFAULT_COST);
 	}
 
 	/**
@@ -38,9 +43,23 @@ public class BCryptConfiguration extends ConfigPart {
 	public void init(final @NotNull ConfigReader reader, final @NotNull ConfigWriter writer) {
 		this.reader = reader;
 
-		writer.schema().with("cost", "Bcrypt parameter cost")
-				.intNumber(value -> value.required(BcryptHash.DEFAULT_COST)
-						.validator(obj -> obj instanceof Number n && n.intValue() >= BcryptHash.DEFAULT_COST))
+		writer.schema()
+				.with("cost", "Bcrypt parameter cost")
+				.intNumber(value -> value
+						.required(DEFAULT_COST)
+						.validator(BCryptConfiguration::isValidBcryptCost))
 				.build();
+	}
+
+	public static boolean isValidBcryptCost(final Object obj) {
+		if (obj instanceof Integer cost) {
+			return cost >= MIN_BCRYPT_COST && cost <= MAX_BCRYPT_COST;
+		}
+		if (obj instanceof Number n) {
+			long asLong = n.longValue();
+			double asDouble = n.doubleValue();
+			return asLong == asDouble && asLong >= MIN_BCRYPT_COST && asLong <= MAX_BCRYPT_COST;
+		}
+		return false;
 	}
 }

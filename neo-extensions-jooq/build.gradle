@@ -55,7 +55,6 @@ dependencies {
     compileOnly("org.postgresql:postgresql:42.7.14")
 
     compileOnly(project(':neo-common'))
-    compileOnly(project(':neo-api-bukkit'))
 
     // Special definitions
     jooqGenerator("org.postgresql:postgresql:42.7.14")

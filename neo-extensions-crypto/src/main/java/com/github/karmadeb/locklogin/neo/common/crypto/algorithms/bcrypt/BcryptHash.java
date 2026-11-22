@@ -1,15 +1,13 @@
-package com.github.karmadeb.locklogin.neo.common.security.methods.bcrypt;
+package com.github.karmadeb.locklogin.neo.common.crypto.algorithms.bcrypt;
 
 import com.github.karmadeb.locklogin.neo.api.security.hash.Hash;
 import com.github.karmadeb.locklogin.neo.api.security.hash.HashProperties;
-import com.github.karmadeb.locklogin.neo.common.security.methods.bcrypt.exception.NotBCryptHashException;
+import com.github.karmadeb.locklogin.neo.common.crypto.algorithms.bcrypt.exception.NotBCryptHashException;
+import com.github.karmadeb.locklogin.neo.common.crypto.config.bcrypt.BCryptConfiguration;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-
 public final class BcryptHash extends Hash {
-
-	public static final int DEFAULT_COST = 4;
 
 	/**
 	 * Create a new hash
@@ -26,7 +24,7 @@ public final class BcryptHash extends Hash {
 	}
 
 	public int cost() {
-		return this.properties.getInt("c", DEFAULT_COST);
+		return this.properties.getInt("c", BCryptConfiguration.DEFAULT_COST);
 	}
 
 	public boolean outdated(final @NotNull HashProperties o) {
@@ -36,7 +34,7 @@ public final class BcryptHash extends Hash {
 	public boolean outdated(final @NotNull HashProperties o, final boolean strict) throws NotBCryptHashException {
 		int otherCost = o.getInt("c");
 		if (otherCost <= 0) {
-			throw new NotBCryptHashException("Cannot compare bcrypt hash with non-argon hash properties (missing \"c\")");
+			throw new NotBCryptHashException("Cannot compare bcrypt hash with non-bcrypt hash properties (missing \"c\")");
 		}
 
 		int cost = this.cost();
@@ -44,7 +42,7 @@ public final class BcryptHash extends Hash {
 	}
 
 	/**
-	 * Adopts any kind of hash as an bcrypt hash
+	 * Adopts any kind of hash as a bcrypt hash
 	 * @param hash the hash
 	 * @return the bcrypt hash
 	 */
@@ -52,8 +50,8 @@ public final class BcryptHash extends Hash {
 		if (hash instanceof BcryptHash bcrypt) return bcrypt;
 
 		HashProperties properties = hash.properties();
-		int cost = properties.getInt("c", BcryptHash.DEFAULT_COST);
-		if (cost <= BcryptHash.DEFAULT_COST) {
+		int cost = properties.getInt("c", BCryptConfiguration.DEFAULT_COST);
+		if (!BCryptConfiguration.isValidBcryptCost(cost)) {
 			throw new NotBCryptHashException("Bad bcrypt hash with non-bcrypt hash properties (missing \"c\")");
 		}
 

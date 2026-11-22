@@ -74,6 +74,7 @@ public final class ConfigurationRegistry extends ConfigRegistry {
 
 			MergedSchemaPart merged = new MergedSchemaPart(path);
 			matchingParts.forEach(merged::add);
+			merged.add(part);
 
 			parts.addFirst(merged);
 		} else {

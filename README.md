@@ -33,15 +33,15 @@ LockLogin Neo is the culmination of four generations of development:
 
 ## Architecture
 
-The project is split into five Gradle modules, each with a distinct responsibility:
+The project is split into four Gradle modules, each with a distinct responsibility:
 
 | Module | Description |
 |---|---|
 | **neo-api** | The core API — defines the contracts for extensions, configuration, messaging, security, and authentication layers. This is the foundation everything else builds on. |
 | **neo-api-bridge** | A platform-agnostic bridge layer that provides abstractions for player interaction, protocol messaging (titles, action bars), and positioning. It offers a centralized way to interact with players regardless of the underlying server platform. |
-| **neo-api-bukkit** | The Bukkit/Spigot platform adapter — implements the bridge abstractions for Bukkit-based servers, providing concrete implementations for player interaction, protocol messaging, and positioning specific to the Bukkit platform. |
 | **neo-common** | Shared implementations and utilities — configuration readers/writers, network buffer handling, and common helpers used across the project. |
 | **neo-extensions-jooq** | The JOOQ extension module — provides database integration using JOOQ (Java Object Oriented Querying) for type-safe SQL queries and database operations. |
+| **neo-extensions-crypto** | The crypto extension module — provides password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. |
 
 ## LockLogin Essentials
 
@@ -56,6 +56,7 @@ Essential extensions are registered this way by the LockLogin plugin itself. Mos
 | Extension | Description |
 |---|---|
 | **neo-essentials-jooq** | Provides official database persistence support through JOOQ for multiple SQL dialects (MySQL, MariaDB, PostgreSQL, SQLite). See [neo-extensions-jooq/README.md](neo-extensions-jooq/README.md) for details. |
+| **neo-essentials-crypto** | Provides official password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. See [neo-extensions-crypto/README.md](neo-extensions-crypto/README.md) for details. |
 
 ## neo-api-bridge (Experimental)
 

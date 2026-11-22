@@ -53,4 +53,14 @@ public @interface ExtensionMeta {
 	 * @return the extension to load after
 	 */
 	String[] runBefore() default {};
+
+	/**
+	 * When auto discover is set to true, the extension
+	 * is provided "as is", without a parent plugin to
+	 * load it. Those extensions are a special kind intended
+	 * to be placed inside an "extensions" directory
+	 * in LockLogin plugin.
+	 * @return if the extension has auto-discovery features
+	 */
+	boolean autoDiscover() default false;
 }

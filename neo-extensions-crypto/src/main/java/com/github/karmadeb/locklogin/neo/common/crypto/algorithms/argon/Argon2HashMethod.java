@@ -1,13 +1,14 @@
-package com.github.karmadeb.locklogin.neo.common.security.methods.argon;
+package com.github.karmadeb.locklogin.neo.common.crypto.algorithms.argon;
 
 import com.github.karmadeb.locklogin.neo.api.Constants;
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.security.HashMethod;
 import com.github.karmadeb.locklogin.neo.api.security.hash.Hash;
 import com.github.karmadeb.locklogin.neo.api.security.hash.HashProperties;
-import com.github.karmadeb.locklogin.neo.common.security.methods.argon.Argon2Hash.Parameter;
-import com.github.karmadeb.locklogin.neo.common.security.methods.argon.Argon2Hash.Version;
-import com.github.karmadeb.locklogin.neo.common.security.methods.argon.exception.NotArgonHashException;
+import com.github.karmadeb.locklogin.neo.common.crypto.algorithms.argon.Argon2Hash.Parameter;
+import com.github.karmadeb.locklogin.neo.common.crypto.algorithms.argon.Argon2Hash.Version;
+import com.github.karmadeb.locklogin.neo.common.crypto.algorithms.argon.exception.NotArgonHashException;
+import com.github.karmadeb.locklogin.neo.common.crypto.config.argon.Argon2Configuration;
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
 import org.bouncycastle.crypto.params.Argon2Parameters;
 import org.jetbrains.annotations.NotNull;

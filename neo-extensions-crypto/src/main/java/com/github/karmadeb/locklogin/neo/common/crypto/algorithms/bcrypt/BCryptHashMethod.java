@@ -1,11 +1,12 @@
-package com.github.karmadeb.locklogin.neo.common.security.methods.bcrypt;
+package com.github.karmadeb.locklogin.neo.common.crypto.algorithms.bcrypt;
 
 import com.github.karmadeb.locklogin.neo.api.Constants;
 import com.github.karmadeb.locklogin.neo.api.extension.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.security.HashMethod;
 import com.github.karmadeb.locklogin.neo.api.security.hash.Hash;
 import com.github.karmadeb.locklogin.neo.api.security.hash.HashProperties;
-import com.github.karmadeb.locklogin.neo.common.security.methods.bcrypt.exception.NotBCryptHashException;
+import com.github.karmadeb.locklogin.neo.common.crypto.algorithms.bcrypt.exception.NotBCryptHashException;
+import com.github.karmadeb.locklogin.neo.common.crypto.config.bcrypt.BCryptConfiguration;
 import org.bouncycastle.crypto.generators.BCrypt;
 import org.jetbrains.annotations.NotNull;
 
@@ -63,8 +64,8 @@ public class BCryptHashMethod implements HashMethod {
 	public @NotNull BcryptHash hash(final @NotNull String input,
 									final byte @NotNull [] salt,
 									final @NotNull HashProperties properties) throws NotBCryptHashException {
-		int cost = properties.getInt("c", BcryptHash.DEFAULT_COST);
-		if (cost <= BcryptHash.DEFAULT_COST) {
+		int cost = properties.getInt("c", BCryptConfiguration.DEFAULT_COST);
+		if (!BCryptConfiguration.isValidBcryptCost(cost)) {
 			throw new NotBCryptHashException("Cannot create bcrypt hash with non-bcrypt hash properties (missing \"c\")");
 		}
 

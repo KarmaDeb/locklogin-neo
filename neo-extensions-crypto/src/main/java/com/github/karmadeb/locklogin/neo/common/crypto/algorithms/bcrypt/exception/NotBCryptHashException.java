@@ -1,4 +1,4 @@
-package com.github.karmadeb.locklogin.neo.common.security.methods.bcrypt.exception;
+package com.github.karmadeb.locklogin.neo.common.crypto.algorithms.bcrypt.exception;
 
 import com.github.karmadeb.locklogin.neo.api.security.hash.HashProperties;
 import org.jetbrains.annotations.Contract;

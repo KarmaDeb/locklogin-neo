@@ -21,6 +21,7 @@ import org.jooq.SQLDialect;
 
 import java.util.NoSuchElementException;
 
+
 @ExtensionMeta(
 		name = "LockLogin JOOQ",
 		id = "neo-essentials-jooq",

@@ -1,11 +1,12 @@
-package com.github.karmadeb.locklogin.neo.common.security.methods.argon;
+package com.github.karmadeb.locklogin.neo.common.crypto.config.argon;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPart;
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigReader;
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigWriter;
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPath;
-import com.github.karmadeb.locklogin.neo.common.security.methods.argon.Argon2Hash.Parameter;
-import com.github.karmadeb.locklogin.neo.common.security.methods.argon.Argon2Hash.Version;
+import com.github.karmadeb.locklogin.neo.common.crypto.algorithms.argon.Argon2Hash;
+import com.github.karmadeb.locklogin.neo.common.crypto.algorithms.argon.Argon2Hash.Parameter;
+import com.github.karmadeb.locklogin.neo.common.crypto.algorithms.argon.Argon2Hash.Version;
 import org.jetbrains.annotations.NotNull;
 
 public final class Argon2Configuration extends ConfigPart {
@@ -38,7 +39,7 @@ public final class Argon2Configuration extends ConfigPart {
 		return Parameter.ARGON2_ID;
 	}
 
-	public Argon2Hash.Version version() {
+	public Version version() {
 		int value = this.reader.getInt("version").orElse(Version.VERSION_13.version());
 		return Version.get(value);
 	}
