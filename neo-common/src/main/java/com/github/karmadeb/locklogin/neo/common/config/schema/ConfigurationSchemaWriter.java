@@ -4,6 +4,7 @@ import com.github.karmadeb.locklogin.neo.api.configuration.ConfigWriter;
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.PropertyWriter;
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.SchemaWriter;
 import com.github.karmadeb.locklogin.neo.common.config.ConfigurationWriter;
+import com.github.karmadeb.locklogin.neo.common.config.registry.SchemaMerger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 public class ConfigurationSchemaWriter implements SchemaWriter {
 
 	private final ConfigurationWriter writer;
-	final Map<String, ConfigurationValueWriter<?>> values = new LinkedHashMap<>();
+	public final Map<String, ConfigurationValueWriter<?>> values = new LinkedHashMap<>();
 
 	@Contract("null -> fail")
 	public ConfigurationSchemaWriter(final ConfigurationWriter writer) {

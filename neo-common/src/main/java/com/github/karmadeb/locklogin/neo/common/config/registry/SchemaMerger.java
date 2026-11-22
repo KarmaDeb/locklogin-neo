@@ -1,8 +1,10 @@
-package com.github.karmadeb.locklogin.neo.common.config.schema;
+package com.github.karmadeb.locklogin.neo.common.config.registry;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.SchemaWriter;
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.ValueWriter;
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.ValueWriter.Type;
+import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationSchemaWriter;
+import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationValueWriter;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -16,7 +18,7 @@ import java.util.function.Supplier;
  * Takes two schemas and produces a merged map of values,
  * leaving both originals unchanged.
  */
-final class SchemaMerger {
+public final class SchemaMerger {
 
 	private SchemaMerger() {
 	}
@@ -28,7 +30,7 @@ final class SchemaMerger {
 	 * @return a map of merged values
 	 */
 	@SuppressWarnings("unchecked")
-	static Map<String, ConfigurationValueWriter<?>> merge(final ConfigurationSchemaWriter thisSchema,
+	public static Map<String, ConfigurationValueWriter<?>> merge(final ConfigurationSchemaWriter thisSchema,
 														  final SchemaWriter other) {
 		Objects.requireNonNull(other);
 		Map<String, ConfigurationValueWriter<?>> valueMap = new LinkedHashMap<>();

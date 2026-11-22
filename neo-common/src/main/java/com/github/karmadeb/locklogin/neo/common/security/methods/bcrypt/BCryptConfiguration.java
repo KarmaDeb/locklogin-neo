@@ -20,7 +20,7 @@ public class BCryptConfiguration extends ConfigPart {
 	 * @return the config part
 	 */
 	@Override
-	public ConfigPath path() {
+	public @NotNull ConfigPath path() {
 		return ConfigPath.of("hash", "bcrypt");
 	}
 

@@ -6,7 +6,7 @@ import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigRegist
 import com.github.karmadeb.locklogin.neo.api.extension.ExtensionManager;
 import com.github.karmadeb.locklogin.neo.api.persistence.PersistenceManager;
 import com.github.karmadeb.locklogin.neo.common.NeoServerPlatform;
-import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationRegistry;
+import com.github.karmadeb.locklogin.neo.common.config.registry.ConfigurationRegistry;
 import com.github.karmadeb.locklogin.neo.common.extension.ExtensionLoader;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;

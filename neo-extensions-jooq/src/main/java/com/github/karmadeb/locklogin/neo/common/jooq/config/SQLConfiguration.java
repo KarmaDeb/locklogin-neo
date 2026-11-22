@@ -9,6 +9,7 @@ import org.apache.commons.validator.routines.DomainValidator;
 import org.apache.commons.validator.routines.InetAddressValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jooq.SQLDialect;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Arrays;
 
@@ -43,7 +44,7 @@ public final class SQLConfiguration extends ConfigPart {
 	 * @return the config part
 	 */
 	@Override
-	public ConfigPath path() {
+	public @NonNull ConfigPath path() {
 		return ConfigPath.of("persistence");
 	}
 
@@ -65,6 +66,10 @@ public final class SQLConfiguration extends ConfigPart {
 
 	public String password() {
 		return this.reader.getString("password").orElse("");
+	}
+
+	public String database() {
+		return this.reader.getString("database").orElse(DEFAULT_DATABASE);
 	}
 
 	public int minPoolSize() {

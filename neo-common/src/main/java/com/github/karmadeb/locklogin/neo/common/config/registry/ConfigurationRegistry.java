@@ -1,13 +1,12 @@
-package com.github.karmadeb.locklogin.neo.common.config.schema;
+package com.github.karmadeb.locklogin.neo.common.config.registry;
 
-import com.github.karmadeb.locklogin.neo.api.configuration.ConfigReader;
-import com.github.karmadeb.locklogin.neo.api.configuration.ConfigWriter;
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPart;
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPath;
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPath.Walker;
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigFile;
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigRegistry;
 import com.github.karmadeb.locklogin.neo.common.config.ConfigurationWriter;
+import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationSchemaWriter;
 import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
@@ -64,45 +63,17 @@ public final class ConfigurationRegistry extends ConfigRegistry {
 				.toList());
 
 		if (!matchingParts.isEmpty()) {
+			ConfigPart existing = matchingParts.getFirst();
+			if (existing instanceof MergedSchemaPart m) {
+				m.add(part);
+				return;
+			}
+
 			ConfigPath path = part.path();
 			matchingParts.forEach(parts::remove);
 
-			List<ConfigPart> allParts = new ArrayList<>(matchingParts);
-			allParts.add(part);
-
-			ConfigPart merged = new ConfigPart() {
-				@Override
-				public ConfigPath path() {
-					return path;
-				}
-
-				@Override
-				public void init(final @NotNull ConfigReader reader, final @NotNull ConfigWriter writer) {
-					ConfigurationWriter configWriter = (ConfigurationWriter) writer;
-					ConfigurationSchemaWriter mergedSchema = null;
-
-					for (ConfigPart p : allParts) {
-						ConfigurationWriter tempWriter = new ConfigurationWriter(
-								new MappingNode(Tag.MAP, new ArrayList<>(), FlowStyle.AUTO));
-						p.init(reader, tempWriter);
-						ConfigurationSchemaWriter schema = tempWriter.schema();
-
-						if (mergedSchema == null) {
-							mergedSchema = schema;
-						} else {
-							mergedSchema = (ConfigurationSchemaWriter) mergedSchema.merge(schema);
-						}
-					}
-
-					if (mergedSchema != null) {
-						ConfigurationSchemaWriter targetSchema = configWriter.schema();
-						ConfigurationSchemaWriter combined = (ConfigurationSchemaWriter) targetSchema.merge(mergedSchema);
-
-						targetSchema.values.clear();
-						targetSchema.values.putAll(combined.values);
-					}
-				}
-			};
+			MergedSchemaPart merged = new MergedSchemaPart(path);
+			matchingParts.forEach(merged::add);
 
 			parts.addFirst(merged);
 		} else {
@@ -141,7 +112,16 @@ public final class ConfigurationRegistry extends ConfigRegistry {
 			return Optional.empty();
 		}
 
-		return p.stream().filter(part::isInstance).map(part::cast).findAny();
+		Optional<T> match = p.stream().filter(part::isInstance).map(part::cast).findAny();
+		if (match.isEmpty()) {
+			return p.stream().filter(instance -> instance instanceof MergedSchemaPart)
+					.map(instance -> ((MergedSchemaPart) instance).find(part))
+					.filter(Optional::isPresent)
+					.flatMap(Optional::stream)
+					.findAny();
+		}
+
+		return match;
 	}
 
 	public CompletableFuture<Void> configure() {

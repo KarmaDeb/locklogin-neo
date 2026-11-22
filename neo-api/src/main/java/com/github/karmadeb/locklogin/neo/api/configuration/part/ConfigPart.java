@@ -18,7 +18,7 @@ public abstract class ConfigPart {
 	 * section key will allow to overwrite its contents
 	 * @return the config part
 	 */
-	public abstract ConfigPath path();
+	public abstract @NotNull ConfigPath path();
 
 	/**
 	 * Initialize the configuration

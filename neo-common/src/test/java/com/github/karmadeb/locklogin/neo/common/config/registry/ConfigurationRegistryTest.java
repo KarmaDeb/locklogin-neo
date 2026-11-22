@@ -6,7 +6,6 @@ import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPart;
 import com.github.karmadeb.locklogin.neo.api.configuration.part.ConfigPath;
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigFile;
 import com.github.karmadeb.locklogin.neo.api.configuration.schema.SchemaWriter;
-import com.github.karmadeb.locklogin.neo.common.config.schema.ConfigurationRegistry;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1503,7 +1502,7 @@ class ConfigurationRegistryTest {
 		}
 
 		@Override
-		public ConfigPath path() {
+		public @NonNull ConfigPath path() {
 			return path;
 		}
 

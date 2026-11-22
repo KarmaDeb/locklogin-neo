@@ -7,7 +7,6 @@ import com.github.karmadeb.locklogin.neo.api.persistence.driver.PersistenceDrive
 import com.github.karmadeb.locklogin.neo.api.persistence.exception.UnsupportedDriverException;
 import com.github.karmadeb.locklogin.neo.common.jooq.orm.Tables;
 import com.github.karmadeb.locklogin.neo.common.jooq.orm.tables.records.UsersRecord;
-import com.zaxxer.hikari.HikariDataSource;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
@@ -56,15 +55,16 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class JooQDriver implements PersistenceDriver {
 
-	protected static final ExecutorService SQL_ASYNC_EXECUTOR = Executors.newWorkStealingPool();
+	protected static final ExecutorService SQL_ASYNC_EXECUTOR = Executors.newCachedThreadPool();
 
 	protected final Class<?> driver;
 	protected final NamespacedIdentity id;
 	protected final SQLDialect dialect;
-	private final AtomicReference<CompletableFuture<HikariDataSource>> connectTaskRef = new AtomicReference<>();
+	private final AtomicReference<CompletableFuture<DataSource>> connectTaskRef = new AtomicReference<>();
 	private final AtomicReference<CompletableFuture<Void>> closeTaskRef = new AtomicReference<>();
 
-	protected HikariDataSource dataSource;
+	protected DataSource dataSource;
+	protected DSLContext dslContext;
 
 	private static final Map<SQLDialect, JooQDriver> providers = new ConcurrentHashMap<>();
 
@@ -125,17 +125,17 @@ public abstract class JooQDriver implements PersistenceDriver {
 	 * @return the database data source
 	 */
 	@Override
-	public final @NotNull CompletableFuture<HikariDataSource> connect() {
-		if (this.dataSource != null && !this.dataSource.isClosed()) {
+	public final @NotNull CompletableFuture<DataSource> connect() {
+		if (this.connected()) {
 			return CompletableFuture.completedFuture(this.dataSource);
 		}
 
-		CompletableFuture<HikariDataSource> existing = connectTaskRef.get();
+		CompletableFuture<DataSource> existing = connectTaskRef.get();
 		if (existing != null && !existing.isCompletedExceptionally() && !existing.isCancelled()) {
 			return existing;
 		}
 
-		CompletableFuture<HikariDataSource> newTask = new CompletableFuture<>();
+		CompletableFuture<DataSource> newTask = new CompletableFuture<>();
 		while (true) {
 			existing = connectTaskRef.get();
 
@@ -146,8 +146,12 @@ public abstract class JooQDriver implements PersistenceDriver {
 			if (connectTaskRef.compareAndSet(existing, newTask)) {
 				SQL_ASYNC_EXECUTOR.submit(() -> {
 					try {
-						HikariDataSource source = configure();
+						DataSource source = configure();
 						this.dataSource = source;
+
+						this.dslContext = DSL.using(source, this.dialect);
+						this.dslContext.createTableIfNotExists(Tables.USERS).execute();
+
 						newTask.complete(source);
 					} catch (Throwable ex) {
 						newTask.completeExceptionally(ex);
@@ -165,7 +169,14 @@ public abstract class JooQDriver implements PersistenceDriver {
 	 */
 	@Override
 	public final boolean connected() {
-		return this.dataSource != null && !this.dataSource.isClosed();
+		if (this.dataSource == null) {
+			return false;
+		}
+
+		try (Connection connection = this.dataSource.getConnection()) {
+			return connection.isValid(5000);
+		} catch (SQLException _) {}
+		return false;
 	}
 
 	/**
@@ -195,11 +206,16 @@ public abstract class JooQDriver implements PersistenceDriver {
 			if (closeTaskRef.compareAndSet(existing, newTask)) {
 				SQL_ASYNC_EXECUTOR.submit(() -> {
 					try {
-						if (!this.dataSource.isClosed()) {
-							this.dataSource.close();
+						if (this.connected()) {
+							if (this.dataSource instanceof AutoCloseable a) {
+								try {
+									a.close();
+								} catch (Exception _) {}
+							}
 						}
 
 						this.dataSource = null;
+						this.dslContext = null;
 					} catch (Throwable ex) {
 						newTask.completeExceptionally(ex);
 					}
@@ -220,14 +236,11 @@ public abstract class JooQDriver implements PersistenceDriver {
 
 		SQL_ASYNC_EXECUTOR.submit(() -> {
 			if (!this.connected()) {
-				//noinspection resource
 				this.connect().join();
 			}
 
 			try {
-				DSLContext context = DSL.using(this.dataSource, this.dialect);
-
-				R result = function.apply(context);
+				R result = function.apply(this.dslContext);
 				task.complete(result);
 			} catch (Exception ex) {
 				task.completeExceptionally(ex);
@@ -248,7 +261,6 @@ public abstract class JooQDriver implements PersistenceDriver {
 		SQL_ASYNC_EXECUTOR.submit(() -> {
 			try {
 				operation.run();
-
 				task.complete(null);
 			} catch (Throwable ex) {
 				task.completeExceptionally(ex);
@@ -259,7 +271,7 @@ public abstract class JooQDriver implements PersistenceDriver {
 	}
 
 	@NotNull
-	protected abstract HikariDataSource configure();
+	protected abstract DataSource configure();
 
 	/**
 	 * Migrate to a different driver from the
