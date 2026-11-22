@@ -12,7 +12,10 @@ public final class EssentialFeatures implements Predicate<Integer> {
 
 	public static final int FEATURE_JOOQ = 1 << 1;
 	public static final int FEATURE_CRYPTO = 1 << 2;
-	private static BigInteger FEATURE_SET = BigInteger.ZERO.setBit(FEATURE_JOOQ).setBit(FEATURE_CRYPTO);
+	public static final int FEATURE_AUTH = 1 << 3;
+	private static BigInteger FEATURE_SET = BigInteger.ZERO.setBit(FEATURE_JOOQ)
+			.setBit(FEATURE_CRYPTO)
+			.setBit(FEATURE_AUTH);
 
 	private EssentialFeatures() {
 		throw new UnsupportedOperationException("Cannot instantiate features manager");

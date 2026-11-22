@@ -33,7 +33,7 @@ LockLogin Neo is the culmination of four generations of development:
 
 ## Architecture
 
-The project is split into four Gradle modules, each with a distinct responsibility:
+The project is split into six Gradle modules, each with a distinct responsibility:
 
 | Module | Description |
 |---|---|
@@ -42,6 +42,7 @@ The project is split into four Gradle modules, each with a distinct responsibili
 | **neo-common** | Shared implementations and utilities — configuration readers/writers, network buffer handling, and common helpers used across the project. |
 | **neo-essentials-jooq** | The JOOQ essentials module — provides database integration using JOOQ (Java Object Oriented Querying) for type-safe SQL queries and database operations. |
 | **neo-essentials-crypto** | The crypto essentials module — provides password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. |
+| **neo-essentials-auth** | The auth essentials module — provides the core password-based authentication flow with login and registration layers, commands, and the challenge-hook pattern. |
 
 ## LockLogin Essentials
 
@@ -53,6 +54,7 @@ Most essential features can be disabled by using the `EssentialFeatures#disable`
 |---|---|
 | **neo-essentials-jooq** | Provides official database persistence support through JOOQ for multiple SQL dialects (MySQL, MariaDB, PostgreSQL, SQLite). See [neo-essentials-jooq/README.md](neo-essentials-jooq/README.md) for details. |
 | **neo-essentials-crypto** | Provides official password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. See [neo-essentials-crypto/README.md](neo-essentials-crypto/README.md) for details. |
+| **neo-essentials-auth** | Provides the core password-based authentication flow with login and registration AuthLayers, Bukkit commands (/login, /register), and the challenge-hook pattern. See [neo-essentials-auth/README.md](neo-essentials-auth/README.md) for details. |
 
 ## neo-api-bridge (Experimental)
 

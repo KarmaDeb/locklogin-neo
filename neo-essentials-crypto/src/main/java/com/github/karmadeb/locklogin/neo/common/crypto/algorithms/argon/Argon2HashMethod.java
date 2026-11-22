@@ -14,9 +14,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.security.MessageDigest;
 
-
 public class Argon2HashMethod implements HashMethod {
 
+	public static final NamespacedIdentity ID = NamespacedIdentity.locklogin("argon2");
 	private final Argon2Configuration configuration;
 
 	public Argon2HashMethod(final Argon2Configuration configuration) {
@@ -25,7 +25,7 @@ public class Argon2HashMethod implements HashMethod {
 
 	@Override
 	public @NotNull NamespacedIdentity id() {
-		return NamespacedIdentity.locklogin("argon2");
+		return ID;
 	}
 
 	@Override

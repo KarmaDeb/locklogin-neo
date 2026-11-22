@@ -13,6 +13,7 @@ import java.security.MessageDigest;
 
 public class BCryptHashMethod implements HashMethod {
 
+	public static final NamespacedIdentity ID = NamespacedIdentity.locklogin("bcrypt");
 	private final BCryptConfiguration configuration;
 
 	public BCryptHashMethod(final BCryptConfiguration configuration) {
@@ -28,7 +29,7 @@ public class BCryptHashMethod implements HashMethod {
 	 */
 	@Override
 	public @NotNull NamespacedIdentity id() {
-		return NamespacedIdentity.locklogin("bcrypt");
+		return ID;
 	}
 
 	/**

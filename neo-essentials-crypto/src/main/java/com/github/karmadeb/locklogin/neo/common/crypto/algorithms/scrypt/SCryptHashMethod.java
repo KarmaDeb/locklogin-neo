@@ -14,6 +14,7 @@ import java.security.MessageDigest;
 
 public class SCryptHashMethod implements HashMethod {
 
+	public static final NamespacedIdentity ID = NamespacedIdentity.locklogin("scrypt");
 	public static final int MAGIC_NUMBERS_DK_LEN = 32;
 	private final SCryptConfiguration configuration;
 
@@ -30,7 +31,7 @@ public class SCryptHashMethod implements HashMethod {
 	 */
 	@Override
 	public @NotNull NamespacedIdentity id() {
-		return NamespacedIdentity.locklogin("scrypt");
+		return ID;
 	}
 
 	/**

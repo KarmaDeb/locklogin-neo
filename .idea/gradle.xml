@@ -11,6 +11,7 @@
             <option value="$PROJECT_DIR$/neo-api" />
             <option value="$PROJECT_DIR$/neo-api-bridge" />
             <option value="$PROJECT_DIR$/neo-common" />
+            <option value="$PROJECT_DIR$/neo-essentials-auth" />
             <option value="$PROJECT_DIR$/neo-essentials-crypto" />
             <option value="$PROJECT_DIR$/neo-essentials-jooq" />
           </set>

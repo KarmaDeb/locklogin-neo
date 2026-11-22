@@ -135,7 +135,8 @@ public abstract class LockLogin<T> {
 	 * Get the current LockLogin instance
 	 * @return the LockLogin instance
 	 */
-	public static LockLogin<?> get() {
-		return LockLogin.instance;
+	@SuppressWarnings("unchecked")
+	public static <T> LockLogin<T> get() {
+		return (LockLogin<T>) LockLogin.instance;
 	}
 }

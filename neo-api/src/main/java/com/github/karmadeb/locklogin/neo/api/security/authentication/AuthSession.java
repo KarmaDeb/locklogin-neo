@@ -25,6 +25,47 @@ import java.util.function.BiConsumer;
 public interface AuthSession<T> extends Future<Boolean> {
 
 	/**
+	 * Current session stage
+	 */
+	enum Stage {
+		/**
+		 * The current session is waiting for a user
+		 * input before processing. During this stage,
+		 * the session timeout (if any) is still counting
+		 * backwards
+		 */
+		PENDING,
+		/**
+		 * The current session has received user input and a
+		 * layer is processing it. During this stage, time
+		 * stops counting backwards and resumes or goes to the
+		 * next step if something goes wrong or successful
+		 */
+		PROCESSING,
+		/**
+		 * The current session has done processing all its auth
+		 * layers and a result is available
+		 */
+		FINISHED
+	}
+
+	/**
+	 * Get the current session stage
+	 * @return the stage of the session
+	 */
+	@NotNull
+	Stage stage();
+
+	/**
+	 * Set the current session stage. Modifying this
+	 * value when {@link #isDone()} is true does nothing
+	 * as isDone being true forces {@link #stage()} to
+	 * return {@link Stage#FINISHED}
+	 * @param stage the current stage
+	 */
+	void stage(final @NotNull Stage stage);
+
+	/**
 	 * Get the session type. This is essentially required
 	 * for in-runtime validation of player object type
 	 * before calling to {@link #start(T)}. It's important

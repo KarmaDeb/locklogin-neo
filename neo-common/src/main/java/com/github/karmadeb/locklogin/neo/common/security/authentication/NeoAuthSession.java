@@ -38,6 +38,7 @@ public final class NeoAuthSession<T> implements AuthSession<T> {
 
 	private Boolean result;
 	private HookFailure failure;
+	private Stage stage = Stage.PENDING;
 
 	@Contract("null -> fail")
 	public NeoAuthSession(final Class<T> type) {
@@ -52,6 +53,38 @@ public final class NeoAuthSession<T> implements AuthSession<T> {
 		for (AuthLayer<?> layer : sortTopologically(layers)) {
 			this.add(layer);
 		}
+	}
+
+	/**
+	 * Get the current session stage
+	 *
+	 * @return the stage of the session
+	 */
+	@Override
+	public @NotNull Stage stage() {
+		if (this.result != null) {
+			return Stage.FINISHED;
+		}
+
+		return this.stage;
+	}
+
+	/**
+	 * Set the current session stage. Modifying this
+	 * value when {@link #isDone()} is true does nothing
+	 * as isDone being true forces {@link #stage()} to
+	 * return {@link Stage#FINISHED}
+	 *
+	 * @param stage the current stage
+	 */
+	@Override
+	public void stage(final @NotNull Stage stage) {
+		if (this.result != null) {
+			this.stage = Stage.FINISHED;
+			return;
+		}
+
+		this.stage = stage;
 	}
 
 	/**
@@ -259,6 +292,8 @@ public final class NeoAuthSession<T> implements AuthSession<T> {
 			resolveWalker(player, target, master);
 			return;
 		}
+
+		this.stage = Stage.PENDING;
 
 		Hook await = layer.challenge(player);
 		await.onSuccess(() -> {
