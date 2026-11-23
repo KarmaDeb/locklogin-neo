@@ -2,6 +2,7 @@ package com.github.karmadeb.locklogin.neo.api;
 
 import com.github.karmadeb.locklogin.neo.api.agnostic.ServerPlatform;
 import com.github.karmadeb.locklogin.neo.api.configuration.registry.ConfigRegistry;
+import com.github.karmadeb.locklogin.neo.api.i18n.registry.LocaleRegistry;
 import com.github.karmadeb.locklogin.neo.api.persistence.PersistenceManager;
 import com.github.karmadeb.locklogin.neo.api.persistence.driver.PersistenceDriver;
 import com.github.karmadeb.locklogin.neo.api.security.HashManager;
@@ -81,11 +82,18 @@ public abstract class LockLogin<T> {
 	public abstract ServerPlatform platform();
 
 	/**
-	 * Get the extensions configuration registry
+	 * Get the configuration registry
 	 * @return the configuration registry
 	 */
 	@NotNull
 	public abstract ConfigRegistry configurations();
+
+	/**
+	 * Get the localization registry
+	 * @return the localization registry
+	 */
+	@NotNull
+	public abstract LocaleRegistry localizations();
 
 	/**
 	 * Get the current persistence manager

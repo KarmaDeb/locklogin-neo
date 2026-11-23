@@ -81,7 +81,7 @@ The `AuthEntrypoint` class is the single entry point for the auth essential. All
 
 ### 2. Configuration layer (`RegistrationConfig.java`)
 
-`RegistrationConfig` is a `ConfigPart` that defines the entire `authentication` section of the plugin configuration. It provides:
+`RegistrationConfig` is a `LocalePart` that defines the entire `authentication` section of the plugin configuration. It provides:
 
 - **Algorithm selection** — `algorithm()` returns a `NamespacedIdentity` for the password hashing algorithm (default: `locklogin:argon2`). The value supports both short names (e.g., `bcrypt`) and fully qualified namespaced IDs (e.g., `myplugin:custom-hash`).
 - **Registration timeout** — `registerTimeout()` returns an `Optional<Integer>` (in seconds; default 120). A value of 0 or less disables the timeout.
@@ -142,7 +142,7 @@ The essential distinguishes between `setupConfiguration()` and `setup()` phases.
 
 ### Pattern 3: Configuration as a first-class citizen
 
-Rather than reading config values ad-hoc, the essential defines a dedicated `ConfigPart` with a full schema. This pattern ensures that configuration is validated at startup, documented inline, and accessible through typed methods rather than string lookups.
+Rather than reading config values ad-hoc, the essential defines a dedicated `LocalePart` with a full schema. This pattern ensures that configuration is validated at startup, documented inline, and accessible through typed methods rather than string lookups.
 
 ### Pattern 4: Platform separation
 

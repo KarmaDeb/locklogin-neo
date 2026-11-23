@@ -72,12 +72,12 @@ The essential is organized into three layers:
 
 The `CryptoEntrypoint` class is the single entry point for the crypto essential. All interaction with the LockLogin API goes through `LockLogin.get()`. During the two lifecycle phases it participates in:
 
-- **`setupConfiguration()`** — Registers three `ConfigPart` instances (`Argon2Configuration`, `BCryptConfiguration`, `SCryptConfiguration`) via `LockLogin.get().configurations().append()` with a shared `ConfigFile` named `crypto`. This ensures the plugin configuration file understands the `hash.argon`, `hash.bcrypt`, and `hash.scrypt` sections before any hashing occurs.
+- **`setupConfiguration()`** — Registers three `LocalePart` instances (`Argon2Configuration`, `BCryptConfiguration`, `SCryptConfiguration`) via `LockLogin.get().configurations().append()` with a shared `LocaleDir` named `crypto`. This ensures the plugin configuration file understands the `hash.argon`, `hash.bcrypt`, and `hash.scrypt` sections before any hashing occurs.
 - **`setup()`** — Reads the configured parameters for each algorithm via `LockLogin.get().configurations().part()`, instantiates the corresponding `HashMethod`, and registers them with `LockLogin.get().hashes().register()`. If a hash method with the same ID is already registered, the `Conflict` exception is silently caught — this allows the essential to be disabled and replaced by a third-party implementation.
 
 ### 2. Configuration layer (`*Configuration.java`)
 
-Each algorithm has a dedicated `ConfigPart` that defines its own scoped section of the configuration file. For example, `Argon2Configuration` owns the path `hash.argon` and defines:
+Each algorithm has a dedicated `LocalePart` that defines its own scoped section of the configuration file. For example, `Argon2Configuration` owns the path `hash.argon` and defines:
 
 - **Type validation** — every field has a validator (e.g., Argon2 parameter must be one of `argon2i`, `argon2d`, or `argon2id`; BCrypt cost must be between 4 and 31).
 - **Default values** — sensible defaults are provided for every field so the configuration works out of the box.
@@ -108,7 +108,7 @@ The essential distinguishes between `setupConfiguration()` and `setup()` phases.
 
 ### Pattern 3: Configuration as a first-class citizen
 
-Rather than reading config values ad-hoc, the essential defines dedicated `ConfigPart` classes with full schemas. This pattern ensures that configuration is validated at startup, documented inline, and accessible through typed methods rather than string lookups.
+Rather than reading config values ad-hoc, the essential defines dedicated `LocalePart` classes with full schemas. This pattern ensures that configuration is validated at startup, documented inline, and accessible through typed methods rather than string lookups.
 
 ### Pattern 4: Manager-based resource registration
 

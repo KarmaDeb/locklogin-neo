@@ -76,7 +76,7 @@ The `JooQEntrypoint` class is the single entry point for the JOOQ essential. All
 
 ### 2. Configuration layer (`SQLConfiguration.java`)
 
-`SQLConfiguration` is a `ConfigPart` that defines the entire `persistence` section of the plugin configuration. It does more than just read values — it defines a full schema with:
+`SQLConfiguration` is a `LocalePart` that defines the entire `persistence` section of the plugin configuration. It does more than just read values — it defines a full schema with:
 
 - **Type validation** — every field has a validator (e.g., host must be a valid IP or domain, port must be 1–65535).
 - **Cross-field constraints** — pool minimum must be less than pool maximum, connection lifetime must be at least double the idle timeout.
@@ -112,7 +112,7 @@ The essential distinguishes between `setupConfiguration()` and `setup()` phases.
 
 ### Pattern 3: Configuration as a first-class citizen
 
-Rather than reading config values ad-hoc, the essential defines a dedicated `ConfigPart` with a full schema. This pattern ensures that configuration is validated at startup, documented inline, and accessible through typed methods rather than string lookups.
+Rather than reading config values ad-hoc, the essential defines a dedicated `LocalePart` with a full schema. This pattern ensures that configuration is validated at startup, documented inline, and accessible through typed methods rather than string lookups.
 
 ### Pattern 4: Abstraction over concrete implementations
 

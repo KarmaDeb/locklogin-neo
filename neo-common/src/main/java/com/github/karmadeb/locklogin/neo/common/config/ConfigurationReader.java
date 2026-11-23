@@ -1,11 +1,10 @@
 package com.github.karmadeb.locklogin.neo.common.config;
 
 import com.github.karmadeb.locklogin.neo.api.configuration.ConfigReader;
+import com.github.karmadeb.locklogin.neo.common.NodeResolver;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.yaml.snakeyaml.DumperOptions.FlowStyle;
-import org.yaml.snakeyaml.DumperOptions.ScalarStyle;
 import org.yaml.snakeyaml.nodes.*;
 
 import java.util.ArrayList;
@@ -24,10 +23,12 @@ public class ConfigurationReader implements ConfigReader {
 	private static final Predicate<String> IS_FLOAT = raw -> raw.matches(PATTERN_FLOAT);
 
 	protected final MappingNode yaml;
+	protected final NodeResolver resolver;
 
 	@Contract("null -> fail")
 	public ConfigurationReader(final MappingNode yamlDocument) {
 		this.yaml = Objects.requireNonNull(yamlDocument);
+		this.resolver = new NodeResolver(this.yaml);
 	}
 
 	@Internal
@@ -44,7 +45,7 @@ public class ConfigurationReader implements ConfigReader {
 	 */
 	@Override
 	public boolean has(final String key) {
-		return this.resolve(key).isPresent();
+		return this.resolver.resolve(key).isPresent();
 	}
 
 	/**
@@ -55,7 +56,7 @@ public class ConfigurationReader implements ConfigReader {
 	 */
 	@Override
 	public Optional<String> getString(final @NotNull String key) {
-		Optional<Node> resolved = this.resolve(key);
+		Optional<Node> resolved = this.resolver.resolve(key);
 		if (resolved.isEmpty()) {
 			return Optional.empty();
 		}
@@ -142,7 +143,7 @@ public class ConfigurationReader implements ConfigReader {
 	 */
 	@Override
 	public Optional<Boolean> getBool(final @NotNull String key) {
-		Optional<Node> resolved = this.resolve(key);
+		Optional<Node> resolved = this.resolver.resolve(key);
 		if (resolved.isEmpty()) {
 			return Optional.empty();
 		}
@@ -166,7 +167,7 @@ public class ConfigurationReader implements ConfigReader {
 	 */
 	@Override
 	public Optional<ConfigurationWriter> getSection(final @NotNull String key) {
-		Optional<Node> resolved = this.resolve(key);
+		Optional<Node> resolved = this.resolver.resolve(key);
 		if (resolved.isEmpty()) {
 			return Optional.empty();
 		}
@@ -187,7 +188,7 @@ public class ConfigurationReader implements ConfigReader {
 	 */
 	@Override
 	public Optional<List<ConfigurationReader>> getSections(final @NotNull String key) {
-		Optional<Node> resolved = this.resolve(key);
+		Optional<Node> resolved = this.resolver.resolve(key);
 		if (resolved.isEmpty()) {
 			return Optional.empty();
 		}
@@ -217,7 +218,7 @@ public class ConfigurationReader implements ConfigReader {
 	 */
 	@Override
 	public List<String> getStringList(final @NotNull String key) {
-		Optional<Node> resolved = this.resolve(key);
+		Optional<Node> resolved = this.resolver.resolve(key);
 		if (resolved.isEmpty()) {
 			return new ArrayList<>();
 		}
@@ -240,7 +241,7 @@ public class ConfigurationReader implements ConfigReader {
 	protected final <T> Optional<T> parse(final @NotNull String key,
 										  final Predicate<String> check,
 										  final Function<String, T> parser) {
-		Optional<Node> resolved = this.resolve(key);
+		Optional<Node> resolved = this.resolver.resolve(key);
 		if (resolved.isEmpty()) {
 			return Optional.empty();
 		}
@@ -254,105 +255,5 @@ public class ConfigurationReader implements ConfigReader {
 		}
 
 		return Optional.empty();
-	}
-
-	protected final Optional<Node> resolve(final @NotNull String key) {
-		return this.resolve(key, 0, false);
-	}
-
-	protected final Optional<ScalarNode> resolveKey(final @NotNull String key) {
-		return this.resolveKey(key, 0, false);
-	}
-
-	protected final Optional<Node> resolve(final @NotNull String key, final int level, final boolean fill) {
-		Result result = this.resolveInternal(key, level, fill);
-		if (result.tuple != null) {
-			return Optional.of(result.tuple.getValueNode());
-		}
-
-		return Optional.ofNullable(result.node);
-	}
-
-	@SuppressWarnings("SameParameterValue")
-	protected final Optional<ScalarNode> resolveKey(final @NotNull String key, final int level, final boolean fill) {
-		Result result = this.resolveInternal(key, level, fill);
-		if (result.tuple != null) {
-			Node keyNode = result.tuple.getKeyNode();
-			if (keyNode instanceof ScalarNode scalar) {
-				return Optional.of(scalar);
-			}
-		}
-		return Optional.empty();
-	}
-
-	@SuppressWarnings("unused")
-	protected final Optional<NodeTuple> resolveTuple(final @NotNull String key, final int level, final boolean fill) {
-		Result result = this.resolveInternal(key, level, fill);
-		return Optional.ofNullable(result.tuple);
-	}
-
-	public static class Result {
-		Node node;
-		NodeTuple tuple;
-		Result(Node node, NodeTuple tuple) {
-			this.node = node;
-			this.tuple = tuple;
-		}
-	}
-
-	protected final Result resolveInternal(final @NotNull String key, final int level, final boolean fill) {
-		String[] parts = key.split("\\.");
-		StringBuilder keyBuilder = new StringBuilder();
-
-		Node node = this.yaml;
-		NodeTuple lastTuple = null;
-		iter:
-		for (int i = 0; i < (parts.length + level); i++) {
-			String part = parts[i];
-
-			if (!keyBuilder.isEmpty()) {
-				keyBuilder.append(".");
-			}
-
-			keyBuilder.append(part);
-			String tmpKey = keyBuilder.toString();
-
-			if (node instanceof MappingNode mapping) {
-				for (NodeTuple tuple : mapping.getValue()) {
-					Node keyNode = tuple.getKeyNode();
-					if (keyNode instanceof ScalarNode scalar && scalar.getValue().equals(tmpKey)) {
-						node = tuple.getValueNode();
-						lastTuple = tuple;
-
-						continue iter;
-					}
-				}
-			}
-
-			if (fill) {
-				Node newNode = new MappingNode(Tag.MAP, new ArrayList<>(), FlowStyle.AUTO);
-				if (node instanceof MappingNode mapping) {
-					List<NodeTuple> tuples = mapping.getValue();
-
-					ScalarNode keyScalar = new ScalarNode(Tag.STR, key, null, null,
-							ScalarStyle.PLAIN);
-					NodeTuple newTuple = new NodeTuple(keyScalar, newNode);
-					tuples.add(newTuple);
-					lastTuple = newTuple;
-				} else if (node instanceof SequenceNode sequence) {
-					List<Node> values = sequence.getValue();
-					values.add(newNode);
-				} else {
-					return new Result(null, null);
-				}
-
-				node = newNode;
-				continue;
-			}
-
-			return new Result(null, null);
-		}
-
-		return new Result(node, lastTuple);
 	}
 }

@@ -11,6 +11,7 @@ import org.yaml.snakeyaml.comments.CommentType;
 import org.yaml.snakeyaml.nodes.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -37,13 +38,38 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 	 */
 	@Override
 	public void comment(final @NotNull String key, final @NotNull String... comments) {
-		this.resolveKey(key).ifPresent(node -> node.setBlockComments(
+		this.resolver.resolveKey(key).ifPresent(node -> node.setBlockComments(
 				Arrays.stream(comments)
 						.map(comment -> comment.startsWith(" ") ? comment :
 								String.format(" %s", comment))
 						.map(comment -> new CommentLine(null, null, comment, CommentType.BLOCK))
 						.collect(Collectors.toList())
 		));
+	}
+
+	/**
+	 * Remove a configuration key
+	 *
+	 * @param key the key to remove
+	 */
+	@Override
+	public void erase(final @NotNull String key) {
+		this.resolver.resolveTuple(key, -2, false).ifPresent(tuple -> {
+			AtomicReference<MappingNode> parent = new AtomicReference<>(this.yaml);
+			String[] parts = key.split("\\.");
+
+			for (int i = 0; i < parts.length - 1; i++) {
+				Optional<Node> child = this.resolver.resolve(String.join(".", Arrays.copyOfRange(parts, 0, i + 1)));
+				child.ifPresent(node -> {
+					if (node instanceof MappingNode) {
+						parent.set((MappingNode) node);
+					}
+				});
+			}
+
+			parent.get().getValue().removeIf(t -> t.getKeyNode() instanceof ScalarNode scalar &&
+					scalar.getValue().equals(parts[parts.length - 1]));
+		});
 	}
 
 	/**
@@ -145,7 +171,7 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 		MappingNode newValue = new MappingNode(Tag.MAP, new ArrayList<>(), FlowStyle.BLOCK);
 		ConfigWriter child = new ConfigurationWriter(newValue);
 
-		this.resolve(key, -1, true).ifPresent(node -> {
+		this.resolver.resolve(key, -1, true).ifPresent(node -> {
 			writer.accept(child);
 
 			if (node instanceof MappingNode mapping) {
@@ -166,7 +192,7 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 	@Override
 	public void writeSections(final @NotNull String key,
 							  final @NotNull Function<Supplier<ConfigWriter>, List<ConfigWriter>> writer) {
-		this.resolve(key, -1, true).ifPresent(node -> {
+		this.resolver.resolve(key, -1, true).ifPresent(node -> {
 			List<ConfigWriter> configs = writer.apply(() -> {
 				MappingNode newValue = new MappingNode(Tag.MAP, new ArrayList<>(), FlowStyle.BLOCK);
 				return new ConfigurationWriter(newValue);
@@ -196,7 +222,7 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 	 */
 	@Override
 	public void writeStringList(final @NotNull String key, final @NotNull List<String> value) {
-		this.resolve(key, -1, true).ifPresent(node -> {
+		this.resolver.resolve(key, -1, true).ifPresent(node -> {
 			List<Node> transformed = value.stream()
 					.map(s -> new ScalarNode(Tag.STR, s, null, null, ScalarStyle.SINGLE_QUOTED))
 					.collect(Collectors.toList());
@@ -224,7 +250,7 @@ public class ConfigurationWriter extends ConfigurationReader implements ConfigWr
 	protected void writeScalar(final String key, final String value, final Tag tag, final ScalarStyle style) {
 		ScalarNode valueNode = new ScalarNode(tag, value, null, null, style);
 
-		this.resolve(key, -1, true).ifPresent(node -> {
+		this.resolver.resolve(key, -1, true).ifPresent(node -> {
 			if (node instanceof MappingNode mapping) {
 				ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.PLAIN);
 				mapping.getValue().add(new NodeTuple(keyNode, valueNode));

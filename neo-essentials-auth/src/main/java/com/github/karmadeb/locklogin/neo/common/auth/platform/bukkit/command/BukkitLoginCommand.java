@@ -12,8 +12,9 @@ import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthSession
 import com.github.karmadeb.locklogin.neo.api.security.hash.Hash;
 import com.github.karmadeb.locklogin.neo.api.user.UserManager;
 import com.github.karmadeb.locklogin.neo.api.user.account.Account;
-import com.github.karmadeb.locklogin.neo.common.auth.AuthMetadataValue;
+import com.github.karmadeb.locklogin.neo.common.auth.platform.bukkit.AuthMetadataValue;
 import com.github.karmadeb.locklogin.neo.common.auth.config.RegistrationConfig;
+import com.github.karmadeb.locklogin.neo.common.auth.platform.bukkit.MetadataHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -24,7 +25,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
-import java.util.concurrent.Callable;
 
 import static com.github.karmadeb.locklogin.neo.common.auth.AuthEntrypoint.CHALLENGE_METADATA_KEY;
 
@@ -62,12 +62,8 @@ public final class BukkitLoginCommand implements CommandExecutor {
 			return true;
 		}
 
-		Hook hook = player.getMetadata(CHALLENGE_METADATA_KEY).stream()
-				.filter(v -> v instanceof AuthMetadataValue m && m.value() != null)
-				.map(AuthMetadataValue.class::cast)
-				.findAny()
-				.map(AuthMetadataValue::value)
-				.orElse(null);
+		MetadataHandler handler = new MetadataHandler(this.plugin, player);
+		Hook hook = handler.hook().orElse(null);
 
 		if (hook == null) {
 			player.sendMessage(ChatColor.RED + "You have not pending authentication");

@@ -3,7 +3,7 @@ package com.github.karmadeb.locklogin.neo.common.auth.platform.bukkit.layer;
 import com.github.karmadeb.locklogin.neo.api.NamespacedIdentity;
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer;
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthSession;
-import com.github.karmadeb.locklogin.neo.common.auth.AuthMetadataValue;
+import com.github.karmadeb.locklogin.neo.common.auth.platform.bukkit.AuthMetadataValue;
 import com.github.karmadeb.locklogin.neo.common.auth.config.RegistrationConfig;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;

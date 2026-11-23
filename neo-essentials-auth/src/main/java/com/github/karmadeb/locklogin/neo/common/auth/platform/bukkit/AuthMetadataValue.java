@@ -1,4 +1,4 @@
-package com.github.karmadeb.locklogin.neo.common.auth;
+package com.github.karmadeb.locklogin.neo.common.auth.platform.bukkit;
 
 import com.github.karmadeb.locklogin.neo.api.security.authentication.AuthLayer.Hook;
 import org.bukkit.metadata.MetadataValue;

@@ -30,6 +30,12 @@ public interface ConfigWriter extends ConfigReader {
 	void comment(final @NotNull String key, final @NotNull String... comments);
 
 	/**
+	 * Remove a configuration key
+	 * @param key the key to remove
+	 */
+	void erase(final @NotNull String key);
+
+	/**
 	 * Write a string in the configuration
 	 * @param key the string key
 	 * @param value the string value

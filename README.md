@@ -148,7 +148,7 @@ api.persistence(new MyPersistenceManager(driver));
 | API access | Direct module fields | `CurrentPlugin` singleton | `LockLogin.get()` singleton |
 | Async tasks | `APICard` queue system | Standard Java concurrency | `AuthLayer.Hook` system |
 | Platform support | Bukkit/Velocity | Bukkit/Velocity | Platform-agnostic (Paper coming) |
-| Configuration | Rigid, hardcoded paths | Rigid, hardcoded paths | `ConfigPart` + `ConfigFile` system |
+| Configuration | Rigid, hardcoded paths | Rigid, hardcoded paths | `LocalePart` + `LocaleDir` system |
 | Auth process expansion | Monolithic auth flow | `UserAuthProcess` chain (conceptual) | `AuthLayer` with Hooks (fully implemented) |
 
 ## Auth Process Evolution
@@ -164,14 +164,14 @@ One of the most important architectural improvements in Neo is how the authentic
 Configuration handling has also seen a major improvement across generations:
 
 - **LockLoginReborn & LockLogin2** — configuration was rigid and hardcoded. Configuration paths and structures were fixed within the plugin, making it difficult for components to define their own settings or for users to customize behavior beyond what the plugin authors anticipated.
-- **LockLogin Neo** — introduces a flexible `ConfigPart` and `ConfigFile` system. Components can define their own configuration sections by extending `ConfigPart`, specifying a scoped path via `path()`, and initializing defaults via `init(ConfigWriter)`. The `ConfigFile` class handles file path resolution, directory creation, and stream management. Configuration parts are registered through `LockLogin.get().configurations()`, allowing multiple components to each manage their own configuration sections without conflicts — a significant quality-of-life improvement for developers.
+- **LockLogin Neo** — introduces a flexible `LocalePart` and `LocaleDir` system. Components can define their own configuration sections by extending `LocalePart`, specifying a scoped path via `path()`, and initializing defaults via `init(ConfigWriter)`. The `LocaleDir` class handles file path resolution, directory creation, and stream management. Configuration parts are registered through `LockLogin.get().configurations()`, allowing multiple components to each manage their own configuration sections without conflicts — a significant quality-of-life improvement for developers.
 
 ## Key Features
 
 - **Modular Essentials** — a modular architecture where built-in essentials provide core functionality (database persistence, password hashing) that can be disabled or replaced. Resources are identified by namespaced IDs to prevent collisions.
 - **Authentication Layers** — a flexible challenge-based system where each layer defines how a player authenticates. Layers can be mandatory or optional, support timeouts, ordering, and use one-time hooks for async resolution with typed failure results.
 - **Multi-Platform Design** — the API and bridge layers are designed to be platform-agnostic, with player adapters that abstract away server-specific details. A PaperMC-compatible version is on the horizon.
-- **Configuration Framework** — a flexible `ConfigPart` and `ConfigFile` system that lets components define their own configuration sections with scoped paths, replacing the rigid, hardcoded configuration of previous generations.
+- **Configuration Framework** — a flexible `LocalePart` and `LocaleDir` system that lets components define their own configuration sections with scoped paths, replacing the rigid, hardcoded configuration of previous generations.
 - **Security & Hashing** — built-in support for password hashing with configurable hash methods and properties.
 - **Messaging Protocol** — a protocol-based messaging system with codecs, envelopes, and payloads for structured communication.
 
