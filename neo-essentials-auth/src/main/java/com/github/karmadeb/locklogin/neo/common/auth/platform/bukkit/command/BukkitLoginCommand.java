@@ -14,22 +14,27 @@ import com.github.karmadeb.locklogin.neo.api.user.UserManager;
 import com.github.karmadeb.locklogin.neo.api.user.account.Account;
 import com.github.karmadeb.locklogin.neo.common.auth.AuthMetadataValue;
 import com.github.karmadeb.locklogin.neo.common.auth.config.RegistrationConfig;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 import static com.github.karmadeb.locklogin.neo.common.auth.AuthEntrypoint.CHALLENGE_METADATA_KEY;
 
 public final class BukkitLoginCommand implements CommandExecutor {
 
+	private final JavaPlugin plugin;
 	private final RegistrationConfig config;
 
-	public BukkitLoginCommand(final RegistrationConfig config) {
+	public BukkitLoginCommand(final JavaPlugin plugin, final RegistrationConfig config) {
+		this.plugin = plugin;
 		this.config = config;
 	}
 
@@ -112,7 +117,11 @@ public final class BukkitLoginCommand implements CommandExecutor {
 
 			Optional<HashMethod> algorithmMethod = api.hashes().get(algorithm, Purpose.PASSWORD);
 			if (algorithmMethod.isEmpty()) {
-				hook.failure(Result.KICK.reason("Could not continue with logging: Password algorithm is not available"));
+				Bukkit.getScheduler().callSyncMethod(this.plugin, () -> {
+					hook.failure(Result.KICK.reason("Could not continue with logging: Password algorithm is not available"));
+					return null;
+				});
+
 				return;
 			}
 
@@ -132,7 +141,7 @@ public final class BukkitLoginCommand implements CommandExecutor {
 			}
 
 			player.sendMessage(ChatColor.GREEN + "Successfully logged in");
-			hook.successful();
+			Bukkit.getScheduler().callSyncMethod(this.plugin, hook);
 		});
 
 		return true;

@@ -27,12 +27,12 @@ public final class BukkitPlatform {
 
 		PluginCommand register = plugin.getCommand("register");
 		if (register != null) {
-			register.setExecutor(new BukkitRegisterCommand(this.config));
+			register.setExecutor(new BukkitRegisterCommand(plugin, this.config));
 		}
 
 		PluginCommand login = plugin.getCommand("login");
 		if (login != null) {
-			login.setExecutor(new BukkitLoginCommand(this.config));
+			login.setExecutor(new BukkitLoginCommand(plugin, this.config));
 		}
 	}
 }

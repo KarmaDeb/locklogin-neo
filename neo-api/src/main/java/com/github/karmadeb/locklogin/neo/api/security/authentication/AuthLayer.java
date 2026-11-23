@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 /**
@@ -105,7 +106,7 @@ public interface AuthLayer<T> {
 	 * meaning after either {@link #successful()} or {@link #failure(HookFailure)}
 	 * are called, further calls will usually get ignored
 	 */
-	final class Hook {
+	final class Hook implements Callable<Void> {
 
 		private boolean processed = false;
 		private HookFailure result;
@@ -272,6 +273,17 @@ public interface AuthLayer<T> {
 					throw new RuntimeException(ex);
 				}
 			};
+		}
+
+		/**
+		 * Computes a result, or throws an exception if unable to do so.
+		 *
+		 * @return computed result
+		 */
+		@Override
+		public Void call() {
+			this.successful();
+			return null;
 		}
 	}
 

@@ -13,11 +13,13 @@ import com.github.karmadeb.locklogin.neo.api.user.account.Account;
 import com.github.karmadeb.locklogin.neo.common.auth.AuthMetadataValue;
 import com.github.karmadeb.locklogin.neo.common.auth.config.RegistrationConfig;
 import com.github.karmadeb.locklogin.neo.common.auth.platform.bukkit.layer.PasswordLoginLayer;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
 import java.time.Clock;
@@ -28,9 +30,11 @@ import static com.github.karmadeb.locklogin.neo.common.auth.AuthEntrypoint.CHALL
 
 public final class BukkitRegisterCommand implements CommandExecutor {
 
+	private final JavaPlugin plugin;
 	private final RegistrationConfig config;
 
-	public BukkitRegisterCommand(final RegistrationConfig config) {
+	public BukkitRegisterCommand(final JavaPlugin plugin, final RegistrationConfig config) {
+		this.plugin = plugin;
 		this.config = config;
 	}
 
@@ -132,7 +136,7 @@ public final class BukkitRegisterCommand implements CommandExecutor {
 
 				session.disable(PasswordLoginLayer.ID);
 				player.sendMessage(ChatColor.GREEN + "Successfully registered");
-				hook.successful();
+				Bukkit.getScheduler().callSyncMethod(this.plugin, hook);
 			});
 		});
 
