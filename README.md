@@ -114,6 +114,7 @@ The current system uses a modular essentials architecture centered around the `L
 
 - **Centralized API access** — all registration and configuration goes through `LockLogin.get()`, which provides access to dedicated managers for each subsystem.
 - **Configurations manager** — `LockLogin.get().configurations()` manages configuration parts and files, allowing components to register their own config sections via `append()` and retrieve parsed values via `part()`.
+- **Localizations manager** — `LockLogin.get().localizations()` manages multi-language localization bundles, allowing components to register translation strings via `append()` and retrieve locale-aware readers via `bundle()`.
 - **Hashes manager** — `LockLogin.get().hashes()` manages hash method registration, allowing components to register hash methods with a specific purpose (e.g., `Purpose.PASSWORD`).
 - **Persistence manager** — `LockLogin.get().persistence()` gets and sets the persistence layer, allowing components to provide database-backed storage.
 - **Auth layers manager** — `LockLogin.get().authLayers()` manages authentication layer registration for custom auth flows.
@@ -121,6 +122,7 @@ The current system uses a modular essentials architecture centered around the `L
 - **Platform-agnostic** — the `neo-api-bridge` module provides abstractions for player interaction, protocol messaging, and positioning that work across any server platform.
 - **AuthLayer system** — replaces the old card-based challenge system with a flexible, hook-based authentication layer system supporting mandatory/optional layers, timeouts, and async resolution.
 - **ConfigPart system** — a flexible configuration framework where components define their own configuration sections with scoped paths.
+- **Localization system** — a multi-language i18n framework with placeholder substitution, cross-locale fallback, and bundle-based writing.
 
 ```java
 // LockLogin Neo style — registering through LockLogin.get()
@@ -128,6 +130,9 @@ LockLogin<?> api = LockLogin.get();
 
 // Register configuration parts
 api.configurations().append(ConfigFile.PLUGIN_CONFIG, new MyConfiguration());
+
+// Register localization bundles
+api.localizations().append(LocaleDir.MESSAGES, new MyLocalization());
 
 // Register hash methods
 api.hashes().register(new MyHashMethod(config), Purpose.PASSWORD);
@@ -148,7 +153,7 @@ api.persistence(new MyPersistenceManager(driver));
 | API access | Direct module fields | `CurrentPlugin` singleton | `LockLogin.get()` singleton |
 | Async tasks | `APICard` queue system | Standard Java concurrency | `AuthLayer.Hook` system |
 | Platform support | Bukkit/Velocity | Bukkit/Velocity | Platform-agnostic (Paper coming) |
-| Configuration | Rigid, hardcoded paths | Rigid, hardcoded paths | `LocalePart` + `LocaleDir` system |
+| Configuration | Rigid, hardcoded paths | Rigid, hardcoded paths | `ConfigPart` + `SchemaWriter` system |
 | Auth process expansion | Monolithic auth flow | `UserAuthProcess` chain (conceptual) | `AuthLayer` with Hooks (fully implemented) |
 
 ## Auth Process Evolution
@@ -159,19 +164,269 @@ One of the most important architectural improvements in Neo is how the authentic
 - **LockLogin2** — introduced the `UserAuthProcess` interface with a chain-of-responsibility pattern (`process(AuthProcess previous)`), allowing modules to define custom authentication steps. However, this remained largely conceptual — the API existed but was never fully realized in practice.
 - **LockLogin Neo** — fully implements and expands on this idea with the `AuthLayer` system. Each layer is registered through `LockLogin.get().authLayers()` with a namespaced identity, supports mandatory/optional modes, configurable timeouts, and ordering via `before()` declarations. The `AuthLayer.Hook` pattern provides a one-time-use callback system (`onSuccess`, `onFailure`, `always`) for async resolution, and typed failure results (`MESSAGE`, `SILENT`, `KICK`) give fine-grained control over what happens on authentication failure.
 
-## Configuration Evolution
+## Configuration API
 
-Configuration handling has also seen a major improvement across generations:
+The Configuration API is an entirely **new feature in LockLogin Neo** — neither LockLoginReborn nor LockLogin2 had a structured, extensible configuration framework. In previous versions, configuration paths and structures were rigid and hardcoded within the plugin, making it impossible for third-party components to define their own settings or for users to customize behavior beyond what the plugin authors anticipated.
 
-- **LockLoginReborn & LockLogin2** — configuration was rigid and hardcoded. Configuration paths and structures were fixed within the plugin, making it difficult for components to define their own settings or for users to customize behavior beyond what the plugin authors anticipated.
-- **LockLogin Neo** — introduces a flexible `LocalePart` and `LocaleDir` system. Components can define their own configuration sections by extending `LocalePart`, specifying a scoped path via `path()`, and initializing defaults via `init(ConfigWriter)`. The `LocaleDir` class handles file path resolution, directory creation, and stream management. Configuration parts are registered through `LockLogin.get().configurations()`, allowing multiple components to each manage their own configuration sections without conflicts — a significant quality-of-life improvement for developers.
+LockLogin Neo replaces this with a flexible, schema-driven configuration system built around three core concepts:
+
+### ConfigPart — Scoped Configuration Sections
+
+A `ConfigPart` represents a scoped section of a configuration file. Each part declares a `ConfigPath` (its "scope" in the YAML document) and an `init()` method that defines the schema for that section. Multiple parts can coexist in the same file, each managing its own section without conflicts.
+
+```java
+public class MyConfig extends ConfigPart {
+    @Override
+    public ConfigPath path() {
+        return ConfigPath.of("myplugin"); // writes under "myplugin:" in YAML
+    }
+
+    @Override
+    public void init(ConfigReader reader, ConfigWriter writer) {
+        // Define the schema for this section
+        writer.schema()
+            .with("enabled", "Whether the feature is enabled")
+            .bool(v -> v.required(true))
+            .with("maxPlayers", "Maximum number of players")
+            .intNumber(v -> v.with(() -> 100))
+            .build();
+    }
+}
+```
+
+Using `ConfigPath.empty()` writes at the root of the document, while `ConfigPath.of("section", "subsection")` nests the part under `section.subsection:`. If two parts share the same path, their schemas are automatically merged.
+
+### ConfigReader & ConfigWriter — Read and Write
+
+`ConfigReader` provides typed access to configuration values (`getString`, `getInt`, `getBool`, `getSection`, etc.), all returning `Optional` for safe access. `ConfigWriter` extends `ConfigReader` with write capabilities, allowing parts to set defaults, comments, and nested sections during initialization.
+
+The writer supports all common YAML types: strings, bytes, shorts, ints, longs, floats, doubles, booleans, sections (nested mappings), sections lists, and string lists.
+
+### SchemaWriter — Declarative Schema Definition
+
+The `SchemaWriter` is the heart of the configuration system. It provides a fluent, declarative API for defining configuration properties with full control over defaults, validation, and comments:
+
+- **`with(key, comments...)`** — starts a new property definition with optional documentation comments.
+- **Type methods** — `string()`, `intNumber()`, `bool()`, `section()`, etc. define the property type.
+- **`with(defaultValue)`** — sets an initial value that is written if the key is missing.
+- **`required(defaultValue)`** — marks the value as required; if the user provides an invalid type, the default is restored.
+- **`validator(predicate)`** — registers a custom validator; if the predicate returns `false`, the value is considered invalid and the required default (if any) is used.
+- **`constant(value)`** — locks a value that cannot be changed by the user; any modification is reverted on each initialization.
+
+Schemas can be merged via `SchemaWriter.merge()`, combining definitions from multiple parts that share the same path. The schema system also supports nested sections and lists of sections, enabling deeply structured configuration hierarchies.
+
+### ConfigFile & ConfigRegistry
+
+`ConfigFile` represents a physical YAML file on disk, handling directory creation and stream management. A convenience constant `ConfigFile.PLUGIN_CONFIG` points to the standard `config.yml` file. Custom files can be created with nested routes: `new ConfigFile("settings", "subdir")`.
+
+`ConfigRegistry` (accessed via `LockLogin.get().configurations()`) manages all registered parts and files. Parts are appended to files via `append(file, part)`, and the registry asynchronously processes all configuration files using virtual threads, reading existing YAML, applying schemas, and writing the result back with proper formatting.
+
+### Why This Matters
+
+The Configuration API is one of the defining features of LockLogin Neo. It enables:
+
+- **Component isolation** — each component defines its own configuration section without touching or depending on other components' config.
+- **Schema validation** — configuration values are validated at startup, not at runtime, catching errors early.
+- **Self-documenting configs** — comments defined in schemas are written directly to the YAML file, making configuration self-documenting.
+- **Safe migrations** — validators can detect outdated values and automatically migrate them to new formats.
+- **Merged schemas** — multiple components can contribute to the same config section, with their schemas automatically merged.
+
+## Localization API
+
+Localization **existed** in previous LockLogin versions, but with severe limitations. Messages were stored in monolithic files — one per locale (`messages_en.yml`, `messages_es.yml`, etc.). Users could modify the **values** of existing translation keys, but any structural change — **adding** a new key, **removing** an existing one, or **changing its type** (e.g., from a `string` to a `string list`) — would cause that key to be **reset** on the next reload, as the plugin overwrote the files with its own hardcoded schema. This made it impossible to extend the messaging system or add custom translations without modifying the plugin itself.
+
+LockLogin Neo replaces this rigid, monolithic approach with a complete i18n system built around locale bundles, phrase objects with automatic placeholder detection, and cross-locale fallback. Keys are still reset to the schema defined by registered `Localization` instances — but the key difference is that the localization schema itself can now be **changed** through the API by adding more `Localization` instances to an existing `LocaleDir`. This means components can contribute new keys, remove existing ones, or change key types, and later-registered localizations take precedence over earlier ones, effectively allowing extensions to override built-in messages.
+
+### Localization — Multi-Language Entry Point
+
+A `Localization` is the entry point for defining translation strings. It provides a single `init(LocaleBundle bundle)` method where all phrases are registered. The bundle manages multiple locales simultaneously, so writing a phrase in one locale propagates the key to all other locales (with the original value as a fallback), while allowing each locale to override the value with its own translation.
+
+```java
+public class MyLocalization extends Localization {
+    @Override
+    public void init(LocaleBundle bundle) {
+        // Write to English — the key is automatically available in other locales
+        bundle.writer(Locale.ENGLISH).write("greeting", "Hello, {username}!");
+        bundle.writer(Locale.ENGLISH).write("goodbye", "Goodbye!");
+
+        // Override with Spanish translation
+        bundle.writer(Locale.of("es")).write("greeting", "¡Hola, {username}!");
+        bundle.writer(Locale.of("es")).write("goodbye", "¡Adiós!");
+    }
+}
+```
+
+### LocaleBundle — Coordinated Multi-Locale Writing
+
+The `LocaleBundle` coordinates reading and writing across all configured locales. When a key is written in one locale, it is automatically propagated to all other locales that do not already have that key. This means the first locale to define a key acts as the "source of truth" for the default value, while subsequent locales can override it with translations.
+
+The bundle tracks which locales have been accessed and provides `reader(locale)` and `writer(locale)` methods for locale-specific access.
+
+### Phrase — Messages with Placeholder Detection
+
+A `Phrase` wraps a localized string and automatically detects all placeholders (`{key}`) in the message. The placeholder scanner handles edge cases like escaped braces (`\{`), double braces (`{{` → `{}`), and nested braces, ensuring accurate placeholder extraction.
+
+Phrases carry their locale, raw message, and the set of detected placeholders — information used by the `Placeholders` resolver to substitute values at runtime.
+
+### Placeholders — Fluent Value Substitution
+
+The `Placeholders` class provides a fluent API for substituting placeholders in phrases. Since `LocaleReader#find()` returns `Optional<Phrase[]>`, API consumers typically apply placeholders to an array, receiving a `String[]` in return:
+
+```java
+Phrase[] phrases = reader.find("greeting").orElse(new Phrase[0]);
+String[] result = Placeholders.parser()
+    .with("username", player.getName())
+    .with("count", 42)
+    .apply(phrases);
+```
+
+Placeholders are detected automatically by the `Phrase` class using the `{key}` syntax. When `apply()` is called, each placeholder is replaced by the corresponding value registered via `with(key, value)`.
+
+#### Parser Resolution Order
+
+When a placeholder value is substituted, `Placeholders` determines how to format the value by following this resolution order:
+
+1. **Type-specific parser** — if a parser is registered for the exact class of the value via `registerParser(Class<T>, Function)`, it is used immediately.
+2. **Generic parser** — if no type-specific parser matches, each registered generic parser (registered via `registerParser(Predicate<Object>, Function)`) is tested in turn; the first one whose predicate returns `true` is used.
+3. **Array fallback** — if no parser matches and the value is an array, `Arrays.deepToString()` is used.
+4. **Default fallback** — if nothing else matches, `String.valueOf()` is used.
+
+This means type-specific parsers always take priority over generic parsers, and generic parsers are only a last resort before the default string conversion.
+
+#### Type-Specific Parsers
+
+A type-specific parser is registered for an exact class. When a placeholder value's class matches the registered class, the parser function is called to format the value:
+
+```java
+// Register a parser for java.util.Date
+Placeholders.registerParser(Date.class, (Date date) -> {
+    return new SimpleDateFormat("yyyy-MM-dd HH:mm").format(date);
+});
+
+// Now any placeholder bound to a Date will be formatted automatically
+Phrase[] phrases = reader.find("lastLogin").orElse(new Phrase[0]);
+// Message: "You last logged in at {date}"
+String[] result = Placeholders.parser()
+    .with("date", new Date())
+    .apply(phrases);
+// Result: "You last logged in at 2026-11-23 23:10"
+```
+
+Type-specific parsers are ideal when you know the exact type of values you will pass — for example, formatting `Duration` objects, `UUID` objects, or custom value objects.
+
+```java
+// Format Duration as a human-readable string
+Placeholders.registerParser(Duration.class, (Duration dur) -> {
+    long hours = dur.toHours();
+    long minutes = dur.toMinutesPart();
+    return hours > 0 ? hours + "h " + minutes + "m" : minutes + "m";
+});
+
+// Format UUID without hyphens
+Placeholders.registerParser(UUID.class, (UUID uuid) -> uuid.toString().replace("-", ""));
+```
+
+**Important:** the class match is exact — superclasses and implementations are **not** considered. Registering a parser for `List.class` will not match an `ArrayList` value; you would need to register the parser for `ArrayList.class` specifically, or use a generic parser instead.
+
+#### Generic Parsers
+
+A generic parser uses a predicate to match any object type, making it useful for broad matching strategies that type-specific parsers cannot express:
+
+```java
+// Match any object that implements CharSequence
+Placeholders.registerParser(
+    obj -> obj instanceof CharSequence,
+    (Object obj) -> ((CharSequence) obj).toString().toUpperCase()
+);
+```
+
+Generic parsers are evaluated in insertion order, and the **first** matching predicate wins. This makes them suitable for fallback strategies:
+
+```java
+// Any enum value — format as its name in lowercase
+Placeholders.registerParser(
+    obj -> obj instanceof Enum,
+    (Object obj) -> ((Enum<?>) obj).name().toLowerCase()
+);
+
+// Any number — format with thousand separators
+Placeholders.registerParser(
+    obj -> obj instanceof Number,
+    (Object obj) -> NumberFormat.getInstance().format((Number) obj)
+);
+```
+
+#### Combined Example
+
+Type-specific and generic parsers can work together, with type-specific parsers taking priority:
+
+```java
+// Type-specific: exact match for LocalDateTime
+Placeholders.registerParser(LocalDateTime.class, (LocalDateTime dt) ->
+    dt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+);
+
+// Generic: any TemporalAccessor (covers ZonedDateTime, OffsetDateTime, etc.)
+Placeholders.registerParser(
+    obj -> obj instanceof TemporalAccessor,
+    (Object obj) -> ((TemporalAccessor) obj).toString()
+);
+
+// LocalDateTime uses the type-specific parser (priority)
+// ZonedDateTime falls through to the generic parser
+// An unknown type falls back to String.valueOf()
+```
+
+#### Common Use Cases
+
+- **Date/Time formatting** — register parsers for `Date`, `LocalDateTime`, `Instant`, etc., to control how timestamps appear in messages.
+- **Enum formatting** — convert enum values to human-readable labels (e.g., `Status.ONLINE` → `"online"`).
+- **Number formatting** — apply locale-aware number formatting, currency symbols, or percentage signs.
+- **Custom objects** — format domain-specific objects (e.g., a `Money` class, a `Version` class) without requiring `toString()` overrides.
+- **Collection formatting** — join lists or sets into comma-separated strings with custom delimiters.
+
+### LocaleDir & LocaleRegistry
+
+`LocaleDir` represents a directory of localization files (e.g., `messages/`, `commands/`). Files follow the naming convention `localization.<locale>.yml` (e.g., `localization.en.yml`, `localization.es.yml`, `localization.pt_BR.yml`). A convenience constant `LocaleDir.MESSAGES` points to the standard `messages/` directory.
+
+`LocaleRegistry` (accessed via `LockLogin.get().localizations()`) manages all registered localization bundles. Localizations are appended via `append(dir, localization)`, and the registry asynchronously processes all directories using virtual threads.
+
+Unlike configuration — where schemas from multiple `ConfigPart` instances are merged — localization does **not** apply any kind of merging. When multiple `Localization` instances are registered to the same `LocaleDir`, they are applied in order, and later instances **overwrite** earlier ones. This means:
+
+1. The registry reads existing YAML files from disk first.
+2. Each registered `Localization` runs its `init(bundle)` method in insertion order.
+3. The final bundle is composed and written back to disk, resetting any keys not defined by the registered localizations.
+
+This overwrite behavior is the mechanism that allows extensions to **extend** or **override** built-in messages: an extension can register its own `Localization` to an existing `LocaleDir`, and its keys will be added to (or overwrite) the built-in ones.
+
+```java
+// Built-in essential registers first
+LockLogin.get().localizations().append(LocaleDir.MESSAGES, new BuiltInMessages());
+
+// An extension can later register to the same directory to override
+LockLogin.get().localizations().append(LocaleDir.MESSAGES, new CustomMessages());
+// CustomMessages keys will overwrite BuiltInMessages keys with the same name
+```
+
+To read localized messages, use `bundle(dir, locale)` to obtain a `LocaleReader`, then call `find(key)` or `get(key, default...)` to retrieve phrases. If the requested locale does not exist, the first available locale is used as a fallback.
+
+### Why This Matters
+
+The Localization API enables:
+
+- **True internationalization** — server owners and translators can maintain translations in multiple languages without touching code.
+- **Cross-locale fallback** — untranslated phrases automatically fall back to the first locale that defined them, preventing missing messages.
+- **Placeholder safety** — automatic placeholder detection ensures translators know exactly which variables a message expects.
+- **Component isolation** — each component registers its own localization bundle in its own directory, avoiding key collisions.
+- **Runtime substitution** — the `Placeholders` API makes it trivial to inject dynamic values into localized messages.
 
 ## Key Features
 
 - **Modular Essentials** — a modular architecture where built-in essentials provide core functionality (database persistence, password hashing) that can be disabled or replaced. Resources are identified by namespaced IDs to prevent collisions.
 - **Authentication Layers** — a flexible challenge-based system where each layer defines how a player authenticates. Layers can be mandatory or optional, support timeouts, ordering, and use one-time hooks for async resolution with typed failure results.
 - **Multi-Platform Design** — the API and bridge layers are designed to be platform-agnostic, with player adapters that abstract away server-specific details. A PaperMC-compatible version is on the horizon.
-- **Configuration Framework** — a flexible `LocalePart` and `LocaleDir` system that lets components define their own configuration sections with scoped paths, replacing the rigid, hardcoded configuration of previous generations.
+- **Configuration Framework** — a schema-driven configuration system (`ConfigPart` + `SchemaWriter`) that lets components define their own configuration sections with scoped paths, validation, comments, and safe migrations — a feature that did not exist in previous LockLogin versions.
+- **Localization Framework** — a complete i18n system with multi-language locale bundles, automatic placeholder detection, cross-locale fallback, and fluent value substitution — replacing the rigid, monolithic localization files of previous versions where structural changes (adding, removing, or changing key types) would reset translation keys. Now the localization schema itself can be changed through the API by registering additional `Localization` instances to an existing `LocaleDir`.
 - **Security & Hashing** — built-in support for password hashing with configurable hash methods and properties.
 - **Messaging Protocol** — a protocol-based messaging system with codecs, envelopes, and payloads for structured communication.
 
