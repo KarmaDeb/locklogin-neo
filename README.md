@@ -33,16 +33,21 @@ LockLogin Neo is the culmination of four generations of development:
 
 ## Architecture
 
-The project is split into six Gradle modules, each with a distinct responsibility:
+LockLogin Neo has six top-level Gradle projects. `neo-api`, `neo-api-bridge`, and `neo-common` provide the shared foundation. The other three projects group subprojects by role: built-in features (`neo-essentials`), reusable platform code (`neo-bases`), and server plugins (`neo-plugins`).
 
-| Module | Description |
+| Gradle project | Responsibility |
 |---|---|
-| **neo-api** | The core API — defines the contracts for configuration, messaging, security, and authentication layers. This is the foundation everything else builds on. |
-| **neo-api-bridge** | A platform-agnostic bridge layer that provides abstractions for player interaction, protocol messaging (titles, action bars), and positioning. It offers a centralized way to interact with players regardless of the underlying server platform. |
-| **neo-common** | Shared implementations and utilities — configuration readers/writers, network buffer handling, and common helpers used across the project. |
-| **neo-essentials-jooq** | The JOOQ essentials module — provides database integration using JOOQ (Java Object Oriented Querying) for type-safe SQL queries and database operations. |
-| **neo-essentials-crypto** | The crypto essentials module — provides password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. |
-| **neo-essentials-auth** | The auth essentials module — provides the core password-based authentication flow with login and registration layers, commands, and the challenge-hook pattern. |
+| [`:neo-api`](neo-api/) | Public contracts for configuration, localization, messaging, persistence, security, and authentication. |
+| [`:neo-api-bridge`](neo-api-bridge/) | Experimental platform-agnostic abstractions for player interaction, protocol messaging, and positioning. |
+| [`:neo-common`](neo-common/) | Shared implementations and utilities used across the project. |
+| [`:neo-essentials`](neo-essentials/) | Parent project for the built-in LockLogin features. |
+| [`:neo-essentials:jooq`](neo-essentials/jooq/) | SQL-backed account persistence using jOOQ. |
+| [`:neo-essentials:crypto`](neo-essentials/crypto/) | Password hashing with Argon2, BCrypt, and SCrypt. |
+| [`:neo-essentials:auth`](neo-essentials/auth/) | Password-based login and registration. |
+| [`:neo-bases`](neo-bases/) | Parent project for reusable platform implementations. |
+| [`:neo-bases:bukkit`](neo-bases/bukkit/) | Shared Bukkit implementation of the LockLogin API, including essentials loading and player listeners. |
+| [`:neo-plugins`](neo-plugins/) | Parent project for server-specific plugin entry points. |
+| [`:neo-plugins:spigot`](neo-plugins/spigot/) | Spigot plugin entry point and descriptor. It uses the Bukkit base rather than reimplementing the shared platform code. |
 
 ## LockLogin Essentials
 
@@ -52,9 +57,9 @@ Most essential features can be disabled by using the `EssentialFeatures#disable`
 
 | Essential | Description |
 |---|---|
-| **neo-essentials-jooq** | Provides official database persistence support through JOOQ for multiple SQL dialects (MySQL, MariaDB, PostgreSQL, SQLite). See [neo-essentials-jooq/README.md](neo-essentials/jooq/README.md) for details. |
-| **neo-essentials-crypto** | Provides official password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. See [neo-essentials-crypto/README.md](neo-essentials/crypto/README.md) for details. |
-| **neo-essentials-auth** | Provides the core password-based authentication flow with login and registration AuthLayers, Bukkit commands (/login, /register), and the challenge-hook pattern. See [neo-essentials-auth/README.md](neo-essentials/auth/README.md) for details. |
+| [`:neo-essentials:jooq`](neo-essentials/jooq/README.md) | Provides database persistence through jOOQ for MySQL, MariaDB, PostgreSQL, and SQLite. |
+| [`:neo-essentials:crypto`](neo-essentials/crypto/README.md) | Provides password hashing with Argon2, BCrypt, and SCrypt via BouncyCastle. |
+| [`:neo-essentials:auth`](neo-essentials/auth/README.md) | Provides password-based authentication layers, Bukkit commands (`/login`, `/register`), and the challenge-hook pattern. |
 
 ## neo-api-bridge (Experimental)
 
@@ -62,7 +67,7 @@ The **neo-api-bridge** module is a currently **experimental** API intended to ac
 
 However, as an experimental API, **neo-api-bridge is subject to breaking changes without notice** — it could be significantly restructured or even removed entirely in future versions. It should not be relied upon for production use.
 
-**Personal recommendation:** For now, writing per-platform adapters is the preferred approach. The [neo-essentials-jooq](neo-essentials/jooq/README.md) module demonstrates this pattern: the core logic is platform-agnostic, while platform-specific code is isolated in a thin adapter layer. This gives full control over platform-specific behavior without being constrained by an abstraction that may evolve or disappear.
+**Personal recommendation:** For now, writing per-platform adapters is the preferred approach. The [`:neo-essentials:jooq`](neo-essentials/jooq/README.md) module demonstrates this pattern: the core logic is platform-agnostic, while platform-specific code is isolated in a thin adapter layer. This gives full control over platform-specific behavior without being constrained by an abstraction that may evolve or disappear.
 
 ## API Evolution
 
