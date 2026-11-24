@@ -22,6 +22,15 @@ public final class EssentialFeatures implements Predicate<Integer> {
 	}
 
 	/**
+	 * Get if a feature is present
+	 * @param feature the feature
+	 * @return if the feature is currently present
+	 */
+	public static boolean has(final int feature) {
+		return FEATURE_SET.testBit(feature);
+	}
+
+	/**
 	 * Disable a feature
 	 * @param feature the feature to turn off
 	 */

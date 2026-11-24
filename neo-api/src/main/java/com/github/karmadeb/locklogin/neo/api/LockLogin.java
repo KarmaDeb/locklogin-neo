@@ -70,7 +70,7 @@ public abstract class LockLogin<T> {
 	 * @param stage the current plugin stage
 	 */
 	@Contract("null -> fail")
-	void stage(final Stage stage) {
+	protected void stage(final Stage stage) {
 		this.stage = Objects.requireNonNull(stage);
 	}
 

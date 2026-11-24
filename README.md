@@ -52,9 +52,9 @@ Most essential features can be disabled by using the `EssentialFeatures#disable`
 
 | Essential | Description |
 |---|---|
-| **neo-essentials-jooq** | Provides official database persistence support through JOOQ for multiple SQL dialects (MySQL, MariaDB, PostgreSQL, SQLite). See [neo-essentials-jooq/README.md](neo-essentials-jooq/README.md) for details. |
-| **neo-essentials-crypto** | Provides official password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. See [neo-essentials-crypto/README.md](neo-essentials-crypto/README.md) for details. |
-| **neo-essentials-auth** | Provides the core password-based authentication flow with login and registration AuthLayers, Bukkit commands (/login, /register), and the challenge-hook pattern. See [neo-essentials-auth/README.md](neo-essentials-auth/README.md) for details. |
+| **neo-essentials-jooq** | Provides official database persistence support through JOOQ for multiple SQL dialects (MySQL, MariaDB, PostgreSQL, SQLite). See [neo-essentials-jooq/README.md](neo-essentials/jooq/README.md) for details. |
+| **neo-essentials-crypto** | Provides official password hashing support for multiple algorithms (Argon2, BCrypt, SCrypt) via BouncyCastle. See [neo-essentials-crypto/README.md](neo-essentials/crypto/README.md) for details. |
+| **neo-essentials-auth** | Provides the core password-based authentication flow with login and registration AuthLayers, Bukkit commands (/login, /register), and the challenge-hook pattern. See [neo-essentials-auth/README.md](neo-essentials/auth/README.md) for details. |
 
 ## neo-api-bridge (Experimental)
 
@@ -62,7 +62,7 @@ The **neo-api-bridge** module is a currently **experimental** API intended to ac
 
 However, as an experimental API, **neo-api-bridge is subject to breaking changes without notice** — it could be significantly restructured or even removed entirely in future versions. It should not be relied upon for production use.
 
-**Personal recommendation:** For now, writing per-platform adapters is the preferred approach. The [neo-essentials-jooq](neo-essentials-jooq/README.md) module demonstrates this pattern: the core logic is platform-agnostic, while platform-specific code is isolated in a thin adapter layer. This gives full control over platform-specific behavior without being constrained by an abstraction that may evolve or disappear.
+**Personal recommendation:** For now, writing per-platform adapters is the preferred approach. The [neo-essentials-jooq](neo-essentials/jooq/README.md) module demonstrates this pattern: the core logic is platform-agnostic, while platform-specific code is isolated in a thin adapter layer. This gives full control over platform-specific behavior without being constrained by an abstraction that may evolve or disappear.
 
 ## API Evolution
 

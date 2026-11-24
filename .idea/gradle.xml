@@ -10,10 +10,15 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/neo-api" />
             <option value="$PROJECT_DIR$/neo-api-bridge" />
+            <option value="$PROJECT_DIR$/neo-bases" />
+            <option value="$PROJECT_DIR$/neo-bases/bukkit" />
             <option value="$PROJECT_DIR$/neo-common" />
-            <option value="$PROJECT_DIR$/neo-essentials-auth" />
-            <option value="$PROJECT_DIR$/neo-essentials-crypto" />
-            <option value="$PROJECT_DIR$/neo-essentials-jooq" />
+            <option value="$PROJECT_DIR$/neo-essentials" />
+            <option value="$PROJECT_DIR$/neo-essentials/auth" />
+            <option value="$PROJECT_DIR$/neo-essentials/crypto" />
+            <option value="$PROJECT_DIR$/neo-essentials/jooq" />
+            <option value="$PROJECT_DIR$/neo-plugins" />
+            <option value="$PROJECT_DIR$/neo-plugins/spigot" />
           </set>
         </option>
         <option name="myGradleHome" value="" />

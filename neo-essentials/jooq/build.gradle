@@ -5,32 +5,8 @@ plugins {
     id('nu.studer.jooq') version '10.2.1'
 }
 
-group = 'com.github.karmadeb'
+group = 'com.github.karmadeb.neo-essentials'
 version = '1.0-SNAPSHOT'
-description = '''
-locklogin-neo extensions jooq is part of the neo-essentials extension
-set. Before we explain what jooq extension is, let's answer first what is
-"neo-essentials extension set".
-
-NEO-Essentials extension set is a set of official extensions packed with
-LockLogin (extracted during plugin startup) which are required in order for
-the plugin to work properly. Essentials stops loading a subset of extension
-if another extension requests it. For instance;
-
-Extension A which was installed by the server owner, already provides what
-neo-extension jooq provides in another way, that extension can then explicitly
-configure the essentials module to not load the JOOQ extension through
-EssentialFeatures.disable(EssentialFeatures.FEATURE_JOOQ);
-
-This is of course just an example, usually if you would want to add support for
-a new dialect already supported by JOOQ, you would just include the neo-extensions-jooq
-as a dependency to your project build manager, and then configure your extension
-to depend on neo-essentials-jooq.
-
-Where does neo-extension-jooq live?
-All of LockLogin essential extensions live inside the LockLogin codebase, and the
-plugin loading it is the own LockLogin.
-'''
 
 repositories {
     mavenCentral()

@@ -1,0 +1,31 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.github.karmadeb'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:6.0.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    subprojects {
+        dependencies {
+            compileOnly(project(':neo-api'))
+            compileOnly(project(':neo-api-bridge'))
+            compileOnly(project(':neo-common'))
+            compileOnly(project(':neo-essentials:auth'))
+            compileOnly(project(':neo-essentials:crypto'))
+            compileOnly(project(':neo-essentials:jooq'))
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+}

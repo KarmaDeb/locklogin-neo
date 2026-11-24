@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.github.karmadeb.neo-essentials'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:6.0.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    compileOnly(project(':neo-essentials:crypto'))
+    //noinspection VulnerableLibrariesLocal
+    compileOnly('org.bukkit:bukkit:26.3-R0.1-SNAPSHOT')
+}
+
+test {
+    useJUnitPlatform()
+}

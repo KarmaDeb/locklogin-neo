@@ -1,0 +1,21 @@
+name: LockLogin
+main: com.github.karmadeb.locklogin.neo.spigot.LockLoginPlugin
+version: 1.0.0
+author: KarmaDev
+api-version: 26.3
+description: |-
+  LockLogin is an authentication plugin intended to be fast and reliable, with
+  one of the most rich APIs for authentication plugins, with Locklogin you build
+  your own authentication flow, rather than depending on a predefined one, and without
+  a payment wall behind "premium" features
+
+commands:
+  register:
+    description: The main command for registering a client
+    usage: /register <password> [password?]
+
+  login:
+    description: The main command for logging in
+    usage: /login <password>
+
+load: STARTUP
