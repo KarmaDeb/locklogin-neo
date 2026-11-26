@@ -11,6 +11,10 @@ repositories {
         name = "spigotmc-repo"
         url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
     }
+    maven {
+        name = "codemc-nms-repo"
+        url = "https://repo.codemc.io/repository/nms-local/"
+    }
     mavenLocal()
 }
 
