@@ -14,6 +14,20 @@ jobs:
   build:
     name: Build ${{ matrix.module }}
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +60,11 @@ jobs:
             exit 1
           fi
           echo "project_version=$project_version" >> "$GITHUB_OUTPUT"
+
+      - name: Initialize jOOQ schema
+        env:
+          PGPASSWORD: postgres
+        run: psql --host=localhost --port=5432 --username=postgres --dbname=postgres --file=.github/scripts/init-jooq-schema.sql
 
       - name: Build module
         id: build
