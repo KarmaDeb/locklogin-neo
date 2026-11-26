@@ -7,6 +7,15 @@ version = '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+
+    subprojects {
+        repositories {
+            maven {
+                name = "spigotmc-repo"
+                url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+            }
+        }
+    }
 }
 
 dependencies {
