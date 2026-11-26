@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'com.gradleup.shadow' version '8.3.6'
 }
 
 group = 'com.github.karmadeb.neo-plugins'
@@ -23,4 +24,24 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+tasks.named('jar') {
+    enabled = false
+}
+
+tasks.named('assemble') {
+    dependsOn tasks.named('shadowJar')
+}
+
+tasks.named('shadowJar') {
+    archiveBaseName.set('locklogin-neo')
+    archiveClassifier.set('spigot')
+    archiveVersion.set(project.version.toString().toLowerCase())
+
+    dependencies {
+        exclude dependency('org.jooq:.*:.*')
+        exclude dependency('io.r2dbc:.*:.*')
+        exclude dependency('org.reactivestreams:.*:.*')
+    }
 }

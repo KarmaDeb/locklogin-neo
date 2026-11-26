@@ -18,7 +18,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    implementation("org.jooq:jooq:3.21.9")
+    compileOnly("org.jooq:jooq:3.21.9")
 
     //noinspection VulnerableLibrariesLocal
     compileOnly('org.bukkit:bukkit:26.3-R0.1-SNAPSHOT')
