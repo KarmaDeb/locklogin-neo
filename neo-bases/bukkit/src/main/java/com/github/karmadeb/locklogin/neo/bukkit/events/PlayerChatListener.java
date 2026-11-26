@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public final class PlayerChatListener implements Listener {
 
-	private final LockLogin<Player> API = LockLogin.get();
+	private final LockLogin<Player> api = LockLogin.get();
 	private final Set<String> allowedCommands;
 
 	public PlayerChatListener(final Set<String> commands) {
@@ -29,7 +29,7 @@ public final class PlayerChatListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onPlayerChat(final AsyncPlayerChatEvent event) {
 		Player player = event.getPlayer();
-		AuthSession<Player> session = API.persistence().users().session(player).orElseThrow();
+		AuthSession<Player> session = api.persistence().users().session(player).orElseThrow();
 		if (!session.stage().equals(Stage.FINISHED)) {
 			event.setCancelled(true);
 		}
@@ -38,7 +38,7 @@ public final class PlayerChatListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onPlayerRunCommand(final PlayerCommandPreprocessEvent event) {
 		Player player = event.getPlayer();
-		AuthSession<Player> session = API.persistence().users().session(player).orElseThrow();
+		AuthSession<Player> session = api.persistence().users().session(player).orElseThrow();
 		if (!session.stage().equals(Stage.FINISHED)) {
 			String command = event.getMessage().trim();
 			if (command.isBlank()) {

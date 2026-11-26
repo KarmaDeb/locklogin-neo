@@ -5,7 +5,10 @@ import com.github.karmadeb.locklogin.neo.api.persistence.PersistenceManager;
 import com.github.karmadeb.locklogin.neo.bukkit.BukkitLockLogin;
 import com.github.karmadeb.locklogin.neo.bukkit.EssentialsLoader;
 import com.github.karmadeb.locklogin.neo.bukkit.events.PlayerChatListener;
+import com.github.karmadeb.locklogin.neo.bukkit.events.PlayerDangerEvent;
 import com.github.karmadeb.locklogin.neo.bukkit.events.PlayerMoveListener;
+import com.github.karmadeb.locklogin.neo.bukkit.events.PlayerRespawnListener;
+import com.github.karmadeb.locklogin.neo.bukkit.limbo.LimboLocation;
 import com.github.karmadeb.locklogin.neo.spigot.event.PlayerSpawnEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -21,14 +24,18 @@ public final class LockLoginPlugin extends JavaPlugin {
 
 	private final BukkitLockLogin api = new BukkitLockLogin("spigot");
 	private final EssentialsLoader loader;
+	private final SpigotDecisions decisions;
 
 	public LockLoginPlugin() {
 		api.registerAsProvider();
 		this.loader = new EssentialsLoader(this);
+		this.decisions = new SpigotDecisions(this);
 	}
 
 	@Override
 	public void onLoad() {
+		LimboLocation.setup();
+
 		api.setStage(Stage.CONFIGURATION);
 		loader.configure();
 	}
@@ -40,7 +47,9 @@ public final class LockLoginPlugin extends JavaPlugin {
 			loader.setup();
 
 			CompletableFuture<Void> awaiter = new CompletableFuture<>();
-			Bukkit.getScheduler().runTask(this, () -> {
+
+			// https://www.bukkit.org/threads/solved-run-code-after-all-plugins-enable.16283/
+			Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
 				PersistenceManager<Player> manager = api.persistence();
 				// noinspection ConstantValue
 				if (manager == null) {
@@ -67,6 +76,8 @@ public final class LockLoginPlugin extends JavaPlugin {
 			// TODO: Make this not a hardcoded set
 			manager.registerEvents(new PlayerChatListener(Set.of("login", "register")), this);
 			manager.registerEvents(new PlayerMoveListener(), this);
+			manager.registerEvents(new PlayerDangerEvent(this.decisions), this);
+			manager.registerEvents(new PlayerRespawnListener(), this);
 			manager.registerEvents(new PlayerSpawnEvent(this), this);
 
 			loader.postSetup();

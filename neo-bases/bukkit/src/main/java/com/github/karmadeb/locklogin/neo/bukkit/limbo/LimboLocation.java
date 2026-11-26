@@ -11,17 +11,21 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
-import java.util.Optional;
 import java.util.UUID;
 
 public final class LimboLocation {
 
-	private static final World world;
+	private static World world;
 
 	private final NamespacedKey locationKey;
 	private final Player player;
 
-	static {
+	public LimboLocation(final JavaPlugin plugin, final Player player) {
+		this.locationKey = NamespacedKey.fromString("locklogin-last-location", plugin);
+		this.player = player;
+	}
+
+	public static void setup() {
 		LimboWorldBiomeProvider provider = new LimboWorldBiomeProvider();
 		LimboWorldChunkGenerator generator = new LimboWorldChunkGenerator();
 
@@ -51,9 +55,8 @@ public final class LimboLocation {
 		world.setChunkForceLoaded(0, 0, true);
 	}
 
-	public LimboLocation(final JavaPlugin plugin, final Player player) {
-		this.locationKey = NamespacedKey.fromString("locklogin-last-location", plugin);
-		this.player = player;
+	public static World world() {
+		return world;
 	}
 
 	public Location limbo() {
